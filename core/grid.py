@@ -78,6 +78,16 @@ class Grid:
                 (col * self.cell_size, self.rows * self.cell_size)
             )
 
+    def place_piece(self, row, col, piece):
+        """Place a piece (track, train, etc.) at (row, col) in the grid."""
+        if self.in_bounds(row, col):
+            self.grid[row][col] = piece
+            # Optionally let the piece know its grid position:
+            if hasattr(piece, "grid_row"):
+                piece.grid_row = row
+            if hasattr(piece, "grid_col"):
+                piece.grid_col = col
+
     def has_object_of_type(self, row, col, obj_type):
         """Returns True if any object of type obj_type is in cell (row, col)."""
         return any(isinstance(obj, obj_type) for obj in self.objects_at(row, col))
