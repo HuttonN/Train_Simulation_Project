@@ -7,6 +7,17 @@ class Train(pygame.sprite.Sprite):
     at the center of its current cell.
     """
 
+    COMPASS_TO_ANGLE = {
+        "E": 0,
+        "NE": -45,
+        "N": -90,
+        "NW": -135,
+        "W": 180,
+        "SW": 135,
+        "S": 90,
+        "SE": 45
+    }
+
     def __init__(self, row, col, grid, colour="red", player_controlled=False):
         """
         Initialise the train at a grid position, snapped to the cell center.
@@ -53,9 +64,18 @@ class Train(pygame.sprite.Sprite):
         if snap_to_center:
             self.x, self.y = self.grid_cell_center(row, col)
 
+    def update_angle_from_track(self):
+        """
+        Sets self.angle based on the compass direction of the current track piece
+        """
+        if self.current_track is not None and hasattr(self.current_track, 'compass'):
+            compass = self.current_track.compass
+            self.angle = self.COMPASS_TO_ANGLE.get(compass, 0)
+
     def set_current_track(self, track_piece):
         """Set the train's current track piece (object reference)."""
         self.current_track = track_piece
+        self.update_angle_from_track()
 
     def set_next_track(self, track_piece):
         """Set the train's next track piece (object reference)."""
