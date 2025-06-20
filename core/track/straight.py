@@ -59,11 +59,11 @@ class StraightTrack(pygame.sprite.Sprite):
         # Used for train orientation
         return {
             "E": 0,
-            "NE": -45,
-            "N": -90,
-            "NW": -135,
+            "NE": 45,
+            "N": 90,
+            "NW": 135,
             "W": 180,
-            "SW": 135,
-            "S": 90,
-            "SE": 45
+            "SW": 225,
+            "S": 270,
+            "SE": 315
         }[self.compass]

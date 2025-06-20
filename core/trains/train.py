@@ -26,7 +26,7 @@ class Train(pygame.sprite.Sprite):
         self.current_track = track_piece
         self.angle = track_piece.get_angle() if track_piece else 0
 
-    def move_towards(self, target_row, target_col, speed=2):
+    def move_towards(self, target_row, target_col, speed=3):
         target_x, target_y = self.grid.grid_to_screen(target_row, target_col)
         dx = target_x - self.x
         dy = target_y - self.y
@@ -44,6 +44,15 @@ class Train(pygame.sprite.Sprite):
         self.rotated_image = pygame.transform.rotate(self.image, self.angle)
         self.image_rect = self.rotated_image.get_rect(center=(self.x, self.y))
         surface.blit(self.rotated_image, self.image_rect)
+
+    def print_status(self):
+        """Print grid coordinates, current track, and angle."""
+        track_info = (
+            f"Track[{self.current_track.row},{self.current_track.col},{getattr(self.current_track, 'compass', '?')}]"
+            if self.current_track else "None"
+        )
+        print(f"Train: (row={self.row}, col={self.col}), on {track_info}, angle={self.angle:.1f}")
+
 
     def load_image(self):
         self.image = pygame.image.load(
