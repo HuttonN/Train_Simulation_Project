@@ -5,7 +5,6 @@ class StraightTrack(pygame.sprite.Sprite):
     """
     Represents a straight track piece between any two grid cell centers.
     """
-    ALLOWED_DIRECTIONS = {"N", "S", "E", "W", "NE", "SE", "SW", "NW"}
 
     def __init__(self, grid, start_row, start_col, end_row, end_col, track_id = None, branch="1"):
         super().__init__()
