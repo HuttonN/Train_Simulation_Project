@@ -45,13 +45,13 @@ class Train(pygame.sprite.Sprite):
         self.image_rect = self.rotated_image.get_rect(center=(self.x, self.y))
         surface.blit(self.rotated_image, self.image_rect)
 
-    def print_status(self):
-        """Print grid coordinates, current track, and angle."""
-        track_info = (
-            f"Track[{self.current_track.row},{self.current_track.col},{getattr(self.current_track, 'compass', '?')}]"
-            if self.current_track else "None"
-        )
-        print(f"Train: (row={self.row}, col={self.col}), on {track_info}, angle={self.angle:.1f}")
+    # def print_status(self):
+    #     """Print grid coordinates, current track, and angle."""
+    #     track_info = (
+    #         f"Track[{self.current_track.row},{self.current_track.col},{getattr(self.current_track, 'compass', '?')}]"
+    #         if self.current_track else "None"
+    #     )
+    #     print(f"Train: (row={self.row}, col={self.col}), on {track_info}, angle={self.angle:.1f}")
 
 
     def load_image(self):
