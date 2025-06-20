@@ -3,113 +3,67 @@ import math
 
 class StraightTrack(pygame.sprite.Sprite):
     """
-    Represents a straight track piece of arbitrary length and orientation.
+    Represents a straight track piece that always connects the center of its own cell
+    to the center of an adjacent cell in the specified compass direction.
     """
+    ALLOWED_DIRECTIONS = {"N", "S", "E", "W", "NE", "SE", "SW", "NW"}
 
-    ALLOWED_DIRECTIONS = {"N", "S", "E", "W", "NE", "SW", "NW", "SE"}
-
-    def __init__(self, track_id, prev_id, next_id, branch, length=75, compass="E"):
-        """
-        Initialize a StraightTrack piece.
-
-        Arguments:
-            track_id: Unique identifier for this piece.
-            prev_id: ID of the previous track piece.
-            next_id: ID of the next track piece.
-            branch: Branch information if relevant.
-            length: The length of the straight piece (default: 75).
-            compass: Orientation of the track ("N", "E", "S", "W", "NE", "SW", "NW", "SE").
-        """
+    def __init__(self, grid, row, col, compass, track_id=None, branch="1"):
         super().__init__()
-        self.track_id = track_id
-        self.prev_id = prev_id
-        self.next_id = next_id
+        self.grid = grid
+        self.row = row
+        self.col = col
+        self.track_id = track_id or f"{row},{col}_{compass}"
         self.branch = branch
-        self.length = length
         self.compass = compass.upper()
         if self.compass not in self.ALLOWED_DIRECTIONS:
             raise ValueError(f"Compass '{self.compass}' not allowed. Must be one of {self.ALLOWED_DIRECTIONS}")
-        self.x = None
-        self.y = None
-        self.occupied = False
 
-    def set_occupied(self, occupied=True):
-        self.occupied = occupied
+        # Set length so the track spans exactly from center to center of two adjacent cells
+        if self.compass in {"N", "S", "E", "W"}:
+            self.length = self.grid.cell_size
+        else:
+            self.length = self.grid.cell_size * math.sqrt(2)
 
-    def is_occupied(self):
-        return self.occupied
+    def draw_track(self, surface, color=(200, 180, 60)):
+        x0, y0 = self.grid.grid_to_screen(self.row, self.col)
+        dx, dy = {
+            "N":  (0, -self.length),
+            "S":  (0, self.length),
+            "E":  (self.length, 0),
+            "W":  (-self.length, 0),
+            "NE": (self.length / math.sqrt(2), -self.length / math.sqrt(2)),
+            "SE": (self.length / math.sqrt(2), self.length / math.sqrt(2)),
+            "SW": (-self.length / math.sqrt(2), self.length / math.sqrt(2)),
+            "NW": (-self.length / math.sqrt(2), -self.length / math.sqrt(2)),
+        }[self.compass]
+        x1 = x0 + dx
+        y1 = y0 + dy
+        pygame.draw.line(surface, color, (x0, y0), (x1, y1), 5)
 
-    def get_id(self):
-        return self.track_id
+    def get_next_cell(self):
+        # Returns (row, col) of next cell in compass direction
+        delta = {
+            "N":  (-1, 0),
+            "S":  (1, 0),
+            "E":  (0, 1),
+            "W":  (0, -1),
+            "NE": (-1, 1),
+            "SE": (1, 1),
+            "SW": (1, -1),
+            "NW": (-1, -1),
+        }[self.compass]
+        return self.row + delta[0], self.col + delta[1]
 
-    def get_prev_id(self):
-        return self.prev_id
-
-    def get_next_id(self):
-        return self.next_id
-
-    def get_coordinates(self):
-        return self.x, self.y
-
-    def set_coordinates(self, x, y):
-        self.x = x
-        self.y = y
-
-    def get_branch(self):
-        return self.branch
-
-    def get_type(self):
-        return "StraightTrack"
-
-    def adjust_compass(self, compass):
-        # For straight tracks, compass does not change
-        return compass
-
-    def draw_track(self, x, y, surface, track_colour=(255, 128, 0)):
-        """
-        Draw the straight track piece at (x, y) using its compass orientation.
-
-        Args:
-            x (float): Start X position.
-            y (float): Start Y position.
-            surface (pygame.Surface): Surface to draw on.
-            track_colour (tuple): RGB color for the track line.
-
-        Returns:
-            tuple: (end_x, end_y), the end coordinates of the track.
-        """
-        line_width = 5
-        length = self.length
-        true_diagonal = math.sqrt(2 * (length ** 2)) / 2
-
-        direction_map = {
-            "N":  (0, -length),
-            "S":  (0, length),
-            "E":  (length, 0),
-            "W":  (-length, 0),
-            "NE": (true_diagonal, -true_diagonal),
-            "SW": (-true_diagonal, true_diagonal),
-            "NW": (-true_diagonal, -true_diagonal),
-            "SE": (true_diagonal, true_diagonal),
-        }
-
-        dx, dy = direction_map[self.compass]
-        end_x, end_y = x + dx, y + dy
-
-        pygame.draw.line(surface, track_colour, (x, y), (end_x, end_y), line_width)
-        self.set_coordinates(x, y)
-
-        return end_x, end_y
-
-    def covered_cells(self, grid):
-        """
-        Returns a list of (row, col) cells covered by this track, given a grid object.
-        (Assumes x, y have been set to the grid start cell center.)
-        """
-        if self.x is None or self.y is None:
-            return []
-        row, col = grid.screen_to_grid(self.x, self.y)
-        covered = [(row, col)]
-        # Optionally, you could interpolate cells along the line for longer pieces
-        # For now, just include the start cell
-        return covered
+    def get_angle(self):
+        # Used for train orientation
+        return {
+            "E": 0,
+            "NE": -45,
+            "N": -90,
+            "NW": -135,
+            "W": 180,
+            "SW": 135,
+            "S": 90,
+            "SE": 45
+        }[self.compass]

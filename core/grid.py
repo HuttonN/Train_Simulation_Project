@@ -42,9 +42,9 @@ class Grid:
         self.grid = [[set() for _ in range(self.cols)] for _ in range(self.rows)]
 
     def grid_to_screen(self, row, col):
-        """Convert (row, col) grid coords to (x, y) screen coords."""
-        x = col * self.cell_size
-        y = row * self.cell_size
+        """Returns (x, y) pixel coords of CENTER of cell (row, col)."""
+        x = col * self.cell_size + self.cell_size // 2
+        y = row * self.cell_size + self.cell_size // 2
         return x, y
 
     def screen_to_grid(self, x, y):
@@ -83,10 +83,6 @@ class Grid:
         if self.in_bounds(row, col):
             self.grid[row][col] = piece
             # Optionally let the piece know its grid position:
-            if hasattr(piece, "grid_row"):
-                piece.grid_row = row
-            if hasattr(piece, "grid_col"):
-                piece.grid_col = col
 
     def has_object_of_type(self, row, col, obj_type):
         """Returns True if any object of type obj_type is in cell (row, col)."""
