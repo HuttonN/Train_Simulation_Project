@@ -1,6 +1,8 @@
 import pygame
 import math
 
+from utils.bezier import quadratic_bezier, bezier_derivative
+
 class CurvedTrack(pygame.sprite.Sprite):
     """
     Represents a curved track between ant two grid cell centers
@@ -22,15 +24,11 @@ class CurvedTrack(pygame.sprite.Sprite):
         self.x0, self.y0 = self.grid.grid_to_screen(start_row, start_col)
         self.x1, self.y1 = self.grid.grid_to_screen(control_row, control_col)
         self.x2, self.y2 = self.grid.grid_to_screen(end_row, end_col)
-
-        def quadratic_bezier(t, p0, p1, p2):
-            """Return the (x,y) point on a quadratic bezier curve for parameter t"""
-            return (
-                ((1-t)**2)*p0[0] + 2*(1-t)*t*p1[0] + (t**2)*p2[0],
-                ((1-t)**2)*p0[1] + 2*(1-t)*t*p1[1] + (t**2)*p2[1]
-            )
-        
-        def bezier_derivative(t, p0, p1, p2):
-            dx = 2*(1-t)*(p1[0] - p0[0]) + 2*t*(p2[0] - p1[0])
-            dy = 2*(1-t)*(p1[1] - p0[1]) + 2*t*(p2[1] - p1[1])
-            return dx, dy
+    
+    def draw_track(self, surface, color=(200,180,60), t=50):
+        steps = [p/(t-1) for p in range(t)]
+        points = []
+        for step in steps:
+            point = quadratic_bezier(step, (self.x0, self.y0), (self.x1, self.y1), (self.x2, self.y2))
+            points.append(point)
+        pygame.draw.lines(surface, color, False, points, 5)
