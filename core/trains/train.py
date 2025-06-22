@@ -21,6 +21,8 @@ class Train(pygame.sprite.Sprite):
         self.image_rect = None
         self.angle = 0
         self.load_image()
+        self.s_on_curve = 0 # Distance along current curve
+        self.curve_speed = 3 
 
     def set_current_track(self, track_piece):
         self.current_track = track_piece
@@ -62,3 +64,10 @@ class Train(pygame.sprite.Sprite):
     def at_cell_center(self):
         expected_x, expected_y = self.grid.grid_to_screen(self.row, self.col)
         return abs(self.x - expected_x) < 1 and abs(self.y - expected_y) < 1
+    
+    def move_along_curve(self, curved_track):
+        self.s_on_curve = min(self.s_on_curve + self.curve_speed, curved_track.curve_length)
+        t = curved_track.arc_length_to_t(self.s_on_curve)
+        (self.x, self.y), self.angle = curved_track.get_point_and_angle(t)
+        if self.s_on_curve >= curved_track.curve_length:
+            self.row, self.col = curved_track.end_row, curved_track.end_col
