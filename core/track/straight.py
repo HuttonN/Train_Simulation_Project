@@ -21,7 +21,7 @@ class StraightTrack(pygame.sprite.Sprite):
         self.x1, self.y1 = self.grid.grid_to_screen(end_row, end_col)
 
         # Store direction as an angle for the train
-        self.angle = -math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
+        self.angle = math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
 
     def draw_track(self, surface, color=(200, 180, 60)):
         pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)

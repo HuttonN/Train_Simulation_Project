@@ -43,7 +43,7 @@ class Train(pygame.sprite.Sprite):
     def draw(self, surface):
         if self.image is None:
             raise RuntimeError("Train image not loaded.")
-        self.rotated_image = pygame.transform.rotate(self.image, self.angle)
+        self.rotated_image = pygame.transform.rotate(self.image, -self.angle)
         self.image_rect = self.rotated_image.get_rect(center=(self.x, self.y))
         surface.blit(self.rotated_image, self.image_rect)
 
