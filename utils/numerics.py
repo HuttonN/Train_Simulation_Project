@@ -1,3 +1,11 @@
+"""
+numerics.py
+
+Contains numerical analysis utilities.
+Includes:
+    - simpson_integral: Compute the definite integral of a function using Simpson's Rule.
+"""
+
 def simpson_integral(f, a, b, n = 32):
     """
     Compute the definite integral of f from a to b using Simpson's Rule.
