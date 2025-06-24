@@ -1,6 +1,7 @@
 import pygame
 import math
-from utils.geometry import quadratic_bezier, bezier_derivative, distance, bezier_speed, simpson_integral
+from utils.geometry import quadratic_bezier, bezier_derivative, distance, bezier_speed
+from utils.numerics import simpson_integral
 
 class CurvedTrack(pygame.sprite.Sprite):
     """
@@ -26,7 +27,7 @@ class CurvedTrack(pygame.sprite.Sprite):
         self.x2, self.y2 = self.grid.grid_to_screen(end_row, end_col)
 
         # Compute total arc length using Simpson's rule
-        self.curve_length = self._total_arc_length()
+        self.curve_length = self.total_arc_length()
 
         # Optionally: precompute a table of evenly-spaced t values for lightning-fast animation
         self.even_t_table = self._build_even_length_table(n_samples=150)
@@ -38,7 +39,7 @@ class CurvedTrack(pygame.sprite.Sprite):
         p0, p1, p2 = self._curve_points()
         return bezier_speed(t, p0, p1, p2)
 
-    def _total_arc_length(self):
+    def total_arc_length(self):
         # Accurate curve length via Simpson's rule
         p0, p1, p2 = self._curve_points()
         f = lambda t: bezier_speed(t, p0, p1, p2)
