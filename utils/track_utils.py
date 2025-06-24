@@ -7,6 +7,8 @@ Includes:
 """
 
 import math
+from core.track.curve    import CurvedTrack
+from core.track.junction import JunctionTrack   #  ← NEW import
 
 def get_segment_length(track):
     """
