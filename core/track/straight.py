@@ -3,10 +3,10 @@ import math
 
 class StraightTrack(pygame.sprite.Sprite):
     """
-    Represents a straight track piece between any two grid cell centers.
+    Represents a straight track piece between two grid cell centers.
+    Endpoints are labeled 'A' and 'B'.
     """
-
-    def __init__(self, grid, start_row, start_col, end_row, end_col, track_id = None, branch="1"):
+    def __init__(self, grid, start_row, start_col, end_row, end_col, track_id=None, branch="1"):
         super().__init__()
         self.grid = grid
         self.start_row = start_row
@@ -16,16 +16,40 @@ class StraightTrack(pygame.sprite.Sprite):
         self.track_id = track_id or f"{start_row},{start_col}->{end_row},{end_col}"
         self.branch = branch
         
-        # Get pixel coordinates of cell center
+        # Get pixel coordinates of cell centers
         self.x0, self.y0 = self.grid.grid_to_screen(start_row, start_col)
         self.x1, self.y1 = self.grid.grid_to_screen(end_row, end_col)
-
-        # Store direction as an angle for the train
         self.angle = math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
 
     def draw_track(self, surface, color=(200, 180, 60)):
         pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)
 
-    def get_angle(self):
-        # Used for train orientation
-        return self.angle
+    def get_endpoints(self):
+        return ["A", "B"]
+
+    def get_endpoint_coords(self, endpoint):
+        if endpoint == "A":
+            return self.x0, self.y0
+        elif endpoint == "B":
+            return self.x1, self.y1
+        else:
+            raise ValueError("Unknown endpoint for straight track.")
+
+    def get_endpoint_grid(self, endpoint):
+        if endpoint == "A":
+            return self.start_row, self.start_col
+        elif endpoint == "B":
+            return self.end_row, self.end_col
+        else:
+            raise ValueError("Unknown endpoint for straight track.")
+
+    def get_angle(self, entry_ep, exit_ep):
+        """
+        Returns angle of travel when moving from entry_ep to exit_ep.
+        """
+        if entry_ep == "A" and exit_ep == "B":
+            return self.angle
+        elif entry_ep == "B" and exit_ep == "A":
+            return (self.angle + 180) % 360
+        else:
+            raise ValueError("Invalid endpoint pair for straight track.")

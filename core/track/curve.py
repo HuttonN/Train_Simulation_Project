@@ -1,14 +1,13 @@
 import pygame
 import math
-from utils.geometry import quadratic_bezier, bezier_derivative, distance, bezier_speed
+from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
 
 class CurvedTrack(pygame.sprite.Sprite):
     """
-    Represents a curved track between any two grid cell centers, with
-    robust constant-speed arc-length parameterization (Simpson + Newton).
+    Represents a quadratic Bezier curve between two endpoints, with control point.
+    Endpoints are labeled 'A' (start) and 'B' (end).
     """
-
     def __init__(self, grid, start_row, start_col, control_row, control_col, end_row, end_col, track_id=None, branch="1"):
         super().__init__()
         self.grid = grid
@@ -21,16 +20,32 @@ class CurvedTrack(pygame.sprite.Sprite):
         self.track_id = track_id or f"curve{start_row},{start_col}->{end_row},{end_col}"
         self.branch = branch
 
-        # Pixel coordinates of curve points
+        # Pixel coordinates
         self.x0, self.y0 = self.grid.grid_to_screen(start_row, start_col)
         self.x1, self.y1 = self.grid.grid_to_screen(control_row, control_col)
         self.x2, self.y2 = self.grid.grid_to_screen(end_row, end_col)
 
-        # Compute total arc length using Simpson's rule
         self.curve_length = self.total_arc_length()
-
-        # Optionally: precompute a table of evenly-spaced t values for lightning-fast animation
         self.even_t_table = self._build_even_length_table(n_samples=150)
+
+    def get_endpoints(self):
+        return ["A", "B"]
+
+    def get_endpoint_coords(self, endpoint):
+        if endpoint == "A":
+            return self.x0, self.y0
+        elif endpoint == "B":
+            return self.x2, self.y2
+        else:
+            raise ValueError("Unknown endpoint for curve track.")
+
+    def get_endpoint_grid(self, endpoint):
+        if endpoint == "A":
+            return self.start_row, self.start_col
+        elif endpoint == "B":
+            return self.end_row, self.end_col
+        else:
+            raise ValueError("Unknown endpoint for curve track.")
 
     def _curve_points(self):
         return (self.x0, self.y0), (self.x1, self.y1), (self.x2, self.y2)
@@ -40,60 +55,81 @@ class CurvedTrack(pygame.sprite.Sprite):
         return bezier_speed(t, p0, p1, p2)
 
     def total_arc_length(self):
-        # Accurate curve length via Simpson's rule
         p0, p1, p2 = self._curve_points()
         f = lambda t: bezier_speed(t, p0, p1, p2)
         return simpson_integral(f, 0, 1, n=64)
 
     def arc_length_up_to_t(self, t):
-        # Returns arc length from t=0 to t (again via Simpson)
         p0, p1, p2 = self._curve_points()
         f = lambda u: bezier_speed(u, p0, p1, p2)
         return simpson_integral(f, 0, t, n=32)
 
-    def arc_length_to_t(self, s, tol=1e-5, max_iter=20):
+    def arc_length_to_t(self, s, direction="A_to_B", tol=1e-5, max_iter=20):
         """
-        Given arc length s, numerically solve for t so that arc length from 0 to t is s.
-        Uses Newton–Raphson for robust, smooth mapping even for difficult curves.
+        Given arc length s, solve for t along the curve (0 to 1 for A->B, 1 to 0 for B->A).
         """
-        if s <= 0:
-            return 0.0
-        if s >= self.curve_length:
-            return 1.0
-
-        t = s / self.curve_length  # Initial guess
-        for _ in range(max_iter):
-            L = self.arc_length_up_to_t(t)
-            speed = self._bezier_speed(t)
-            if speed == 0:
-                break
-            t_new = t - (L - s) / speed
-            if abs(t_new - t) < tol:
-                return min(max(t_new, 0), 1)
-            t = min(max(t_new, 0), 1)
-        return t
+        if direction == "A_to_B":
+            if s <= 0:
+                return 0.0
+            if s >= self.curve_length:
+                return 1.0
+            t = s / self.curve_length  # Initial guess
+            for _ in range(max_iter):
+                L = self.arc_length_up_to_t(t)
+                speed = self._bezier_speed(t)
+                if speed == 0:
+                    break
+                t_new = t - (L - s) / speed
+                if abs(t_new - t) < tol:
+                    return min(max(t_new, 0), 1)
+                t = min(max(t_new, 0), 1)
+            return t
+        elif direction == "B_to_A":
+            if s <= 0:
+                return 1.0
+            if s >= self.curve_length:
+                return 0.0
+            t = 1.0 - (s / self.curve_length)  # Initial guess
+            for _ in range(max_iter):
+                L = self.arc_length_up_to_t(t)
+                speed = self._bezier_speed(t)
+                if speed == 0:
+                    break
+                t_new = t - (self.curve_length - L - s) / (-speed)
+                if abs(t_new - t) < tol:
+                    return min(max(t_new, 0), 1)
+                t = min(max(t_new, 0), 1)
+            return t
+        else:
+            raise ValueError("direction must be 'A_to_B' or 'B_to_A'.")
 
     def _build_even_length_table(self, n_samples=150):
-        """
-        Precompute a list of t values corresponding to evenly-spaced distances along the curve.
-        (Optional, but useful for fast lookup and uniform train stepping.)
-        """
         ts = []
         L = self.curve_length
         for i in range(n_samples + 1):
             s = L * i / n_samples
-            t = self.arc_length_to_t(s)
+            t = self.arc_length_to_t(s, direction="A_to_B")
             ts.append(t)
         return ts
 
-    def get_point_and_angle(self, t):
+    def get_point_and_angle(self, t, direction="A_to_B"):
+        """
+        t in [0,1], direction as 'A_to_B' or 'B_to_A'
+        """
+        if direction == "B_to_A":
+            t = 1 - t
         point = quadratic_bezier(t, (self.x0, self.y0), (self.x1, self.y1), (self.x2, self.y2))
         dx, dy = bezier_derivative(t, (self.x0, self.y0), (self.x1, self.y1), (self.x2, self.y2))
+        if direction == "B_to_A":
+            dx, dy = -dx, -dy
         angle = math.degrees(math.atan2(dy, dx))
         return point, angle
 
-    def get_angle(self):
+    def get_angle(self, entry_ep, exit_ep):
+        direction = "A_to_B" if (entry_ep == "A" and exit_ep == "B") else "B_to_A"
         dx, dy = bezier_derivative(0.0, (self.x0, self.y0), (self.x1, self.y1), (self.x2, self.y2))
+        if direction == "B_to_A":
+            dx, dy = -dx, -dy
         return math.degrees(math.atan2(dy, dx))
 
     def draw_track(self, surface, color=(200,180,60), n_points=50):
