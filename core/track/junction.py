@@ -93,6 +93,26 @@ class JunctionTrack(BaseTrack):
         else:
             raise ValueError("Unknown endpoint: " + ep)
         
+    # --- Control / State Methods ---------------------------------------
+        
+    def activate_branch(self):
+        """Activate the diverging (curve) branch. 'A' connects to 'C'."""
+        self.branch_activated = True
+
+    def deactivate_branch(self):
+        """Deactivate the diverging branch (activate straight). 'A' connects to 'S'."""
+        self.branch_activated = False
+
+    def is_branch_set_for(self, entry_ep, exit_ep):
+        """
+        Check if the current branch activation matches the desired route.
+        """
+        if {entry_ep, exit_ep} == {"A", "S"}:
+            return not self.branch_activated
+        if {entry_ep, exit_ep}:
+            return self.branch_activated
+        return True
+
     # --- Geometry and Movement Methods ---------------------------------------
         
     def get_angle(self, entry_ep, exit_ep):
