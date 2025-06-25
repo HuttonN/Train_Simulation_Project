@@ -38,10 +38,6 @@ class Train(pygame.sprite.Sprite):
         self.entry_ep = entry_ep
         self.exit_ep = exit_ep
 
-        # Default: not reverse
-        self.reverse = (entry_ep != "A" or exit_ep != "B")
-
-        # For straight and curve: set position and direction
         if isinstance(track_piece, StraightTrack):
             grid_pos = track_piece.get_endpoint_grid(entry_ep)
             pixel_pos = track_piece.get_endpoint_coords(entry_ep)
@@ -55,26 +51,45 @@ class Train(pygame.sprite.Sprite):
             self.x, self.y = pixel_pos
             if entry_ep == "A" and exit_ep == "B":
                 self.s_on_curve = 0
-                direction = "A_to_B"
             elif entry_ep == "B" and exit_ep == "A":
                 self.s_on_curve = track_piece.curve_length
-                direction = "B_to_A"
             else:
                 raise ValueError("Invalid endpoint pair for CurvedTrack.")
             self.angle = track_piece.get_angle(entry_ep, exit_ep)
         elif isinstance(track_piece, JunctionTrack):
-            # For future extensibility, junctions can have their own entry logic
-            # Placeholder for now
-            pass
+            grid_pos = track_piece.get_endpoint_grid(entry_ep)
+            pixel_pos = track_piece.get_endpoint_coords(entry_ep)
+            self.row, self.col = grid_pos
+            self.x, self.y = pixel_pos
+            # Set s_on_curve if entering on curve
+            if {entry_ep, exit_ep} == {"A", "S"}:
+                self.angle = track_piece.get_angle(entry_ep, exit_ep)
+            elif {entry_ep, exit_ep} == {"A", "C"}:
+                if entry_ep == "A":
+                    self.s_on_curve = 0
+                else:
+                    self.s_on_curve = track_piece.curve_length
+                self.angle = track_piece.get_angle(entry_ep, exit_ep)
+            elif {entry_ep, exit_ep} == {"S", "A"}:
+                self.angle = track_piece.get_angle(entry_ep, exit_ep)
+            elif {entry_ep, exit_ep} == {"C", "A"}:
+                if entry_ep == "C":
+                    self.s_on_curve = track_piece.curve_length
+                else:
+                    self.s_on_curve = 0
+                self.angle = track_piece.get_angle(entry_ep, exit_ep)
+            else:
+                # For unsupported pairs, just set angle toward exit
+                self.angle = track_piece.get_angle(entry_ep, exit_ep)
 
     def move_along_segment(self, speed):
         """
-        Move the train along its current track segment (straight or curve).
+        Move the train along its current track segment (straight, curve, or junction).
         Uses entry_ep and exit_ep to determine direction.
         """
         track = self.current_track
         if isinstance(track, StraightTrack):
-            # Find target endpoint
+            # Move toward exit endpoint
             target_grid = track.get_endpoint_grid(self.exit_ep)
             target_x, target_y = track.get_endpoint_coords(self.exit_ep)
             dx = target_x - self.x
@@ -87,7 +102,6 @@ class Train(pygame.sprite.Sprite):
                 self.x, self.y = target_x, target_y
                 self.row, self.col = target_grid
         elif isinstance(track, CurvedTrack):
-            # Direction
             direction = "A_to_B" if (self.entry_ep == "A" and self.exit_ep == "B") else "B_to_A"
             if direction == "A_to_B":
                 self.s_on_curve = min(self.s_on_curve + speed, track.curve_length)
@@ -96,14 +110,13 @@ class Train(pygame.sprite.Sprite):
                 self.s_on_curve = max(self.s_on_curve - speed, 0)
                 t = track.arc_length_to_t(self.s_on_curve, direction="B_to_A")
             (self.x, self.y), self.angle = track.get_point_and_angle(t, direction=direction)
-            # Snap grid cell at end
             if direction == "A_to_B" and self.s_on_curve >= track.curve_length:
                 self.row, self.col = track.get_endpoint_grid("B")
             elif direction == "B_to_A" and self.s_on_curve <= 0:
                 self.row, self.col = track.get_endpoint_grid("A")
         elif isinstance(track, JunctionTrack):
-            # Placeholder: you will implement branch logic here
-            pass
+            # Delegate all movement/direction logic to JunctionTrack
+            track.move_along_segment(self, speed, self.entry_ep, self.exit_ep)
 
     def draw(self, surface):
         if self.image is None:
