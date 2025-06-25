@@ -1,13 +1,17 @@
 import pygame
 import math
 
-class StraightTrack(pygame.sprite.Sprite):
+from core.track.base import BaseTrack
+
+class StraightTrack(BaseTrack):
     """
     Represents a straight track piece between two grid cell centers.
     Endpoints are labeled 'A' and 'B'.
     """
 
     ENDPOINTS = ["A", "B"]
+
+    # --- Constructor ---------------------------------------------------------
 
     def __init__(self, grid, start_row, start_col, end_row, end_col, track_id=None):
         super().__init__()
@@ -23,13 +27,21 @@ class StraightTrack(pygame.sprite.Sprite):
         self.x1, self.y1 = self.grid.grid_to_screen(end_row, end_col)
         self.angle = math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
 
-    def draw_track(self, surface, color=(200, 180, 60)):
-        """Draws the straight track on the given surface"""
-        pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)
+        # DRY endpoint maps
+        self._endpoint_coords = {
+            "A": (self.x0, self.y0),
+            "B": (self.x1, self.y1)
+        }
+        self._endpoint_grids = {
+            "A": (self.start_row, self.start_col),
+            "B": (self.end_row, self.end_col)
+        }
+
+    # --- Endpoint Methods ----------------------------------------------------
 
     def get_endpoints(self):
         return ["A", "B"]
-
+    
     def get_endpoint_coords(self, endpoint):
         """Returns pixel coordinates for the requested endpoint label."""
         if endpoint == "A":
@@ -47,6 +59,8 @@ class StraightTrack(pygame.sprite.Sprite):
             return self.end_row, self.end_col
         else:
             raise ValueError("Unknown endpoint for straight track.")
+        
+    # --- Geometry Methods ----------------------------------------------------
 
     def get_angle(self, entry_ep, exit_ep):
         """Returns angle of travel when moving from entry_ep to exit_ep."""
@@ -56,3 +70,9 @@ class StraightTrack(pygame.sprite.Sprite):
             return (self.angle + 180) % 360
         else:
             raise ValueError("Invalid endpoint pair for straight track.")
+        
+    # --- Rendering Methods ----------------------------------------------------
+
+    def draw_track(self, surface, color=(200, 180, 60)):
+        """Draws the straight track on the given surface"""
+        pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)

@@ -1,9 +1,12 @@
 import pygame
 import math
+
+from core.track.base import BaseTrack
+
 from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
 
-class CurvedTrack(pygame.sprite.Sprite):
+class CurvedTrack(BaseTrack):
     """
     Represents a quadratic Bezier curve between two endpoints, with control point.
     Endpoints are labeled 'A' (start) and 'B' (end).
@@ -29,8 +32,18 @@ class CurvedTrack(pygame.sprite.Sprite):
         self.x1, self.y1 = self.grid.grid_to_screen(control_row, control_col)
         self.x2, self.y2 = self.grid.grid_to_screen(end_row, end_col)
 
+        # Endpoint maps
+        self.endpoint_coords = {
+            "A": (self.x0, self.y0),
+            "B": (self.x2, self.y2)
+        }
+        self.endpoint_grids = {
+            "A": (self.start_row, self.start_col),
+            "B": (self.end_row, self.end_col)
+        }
+
         self.curve_length = self.total_arc_length()
-        self.even_t_table = self._build_even_length_table(n_samples=150)
+        self.even_t_table = self.build_even_length_table(n_samples=150)
 
     # --- Endpoint Methods ----------------------------------------------------
 

@@ -1,10 +1,12 @@
 import pygame
 import math
 
+from core.track.base import BaseTrack
+
 from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
 
-class JunctionTrack(pygame.sprite.Sprite):
+class JunctionTrack(BaseTrack):
     """
     Represents a simple junction with a main (straight) branch and a diverging (left or right) branch.
     Endpoints: 'A' (start), 'S' (straight end), 'C' (curve end).
@@ -44,6 +46,18 @@ class JunctionTrack(pygame.sprite.Sprite):
         self.xS, self.yS = self.grid.grid_to_screen(straight_end_row, straight_end_col)
         self.xCtrl, self.yCtrl = self.grid.grid_to_screen(curve_control_row, curve_control_col)
         self.xC, self.yC = self.grid.grid_to_screen(curve_end_row, curve_end_col)
+
+        # Endpoint maps
+        self._endpoint_coords = {
+            "A": (self.xA, self.yA),
+            "S": (self.xS, self.yS),
+            "C": (self.xC, self.yC)
+        }
+        self._endpoint_grids = {
+            "A": (self.start_row, self.start_col),
+            "S": (self.straight_end_row, self.straight_end_col),
+            "C": (self.curve_end_row, self.curve_end_col)
+        }
 
         # Compute total arc length using Simpson's rule
         self.curve_length = self.total_arc_length()
