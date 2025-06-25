@@ -97,10 +97,12 @@ class JunctionTrack(BaseTrack):
         
     def activate_branch(self):
         """Activate the diverging (curve) branch. 'A' connects to 'C'."""
+        pygame.time.delay(3000)
         self.branch_activated = True
 
     def deactivate_branch(self):
         """Deactivate the diverging branch (activate straight). 'A' connects to 'S'."""
+        pygame.time.delay(3000)
         self.branch_activated = False
 
     def is_branch_set_for(self, entry_ep, exit_ep):
