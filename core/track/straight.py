@@ -6,15 +6,17 @@ class StraightTrack(pygame.sprite.Sprite):
     Represents a straight track piece between two grid cell centers.
     Endpoints are labeled 'A' and 'B'.
     """
-    def __init__(self, grid, start_row, start_col, end_row, end_col, track_id=None, branch="1"):
+
+    ENDPOINTS = ["A", "B"]
+
+    def __init__(self, grid, start_row, start_col, end_row, end_col, track_id=None):
         super().__init__()
         self.grid = grid
         self.start_row = start_row
         self.start_col = start_col
         self.end_row = end_row
         self.end_col = end_col
-        self.track_id = track_id or f"{start_row},{start_col}->{end_row},{end_col}"
-        self.branch = branch
+        self.track_id = track_id or f"Straight:{start_row},{start_col}->{end_row},{end_col}"
         
         # Get pixel coordinates of cell centers
         self.x0, self.y0 = self.grid.grid_to_screen(start_row, start_col)
@@ -22,12 +24,14 @@ class StraightTrack(pygame.sprite.Sprite):
         self.angle = math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
 
     def draw_track(self, surface, color=(200, 180, 60)):
+        """Draws the straight track on the given surface"""
         pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)
 
     def get_endpoints(self):
         return ["A", "B"]
 
     def get_endpoint_coords(self, endpoint):
+        """Returns pixel coordinates for the requested endpoint label."""
         if endpoint == "A":
             return self.x0, self.y0
         elif endpoint == "B":
@@ -36,6 +40,7 @@ class StraightTrack(pygame.sprite.Sprite):
             raise ValueError("Unknown endpoint for straight track.")
 
     def get_endpoint_grid(self, endpoint):
+        """Returns grid coordinates for the requested endpoint label."""
         if endpoint == "A":
             return self.start_row, self.start_col
         elif endpoint == "B":
@@ -44,9 +49,7 @@ class StraightTrack(pygame.sprite.Sprite):
             raise ValueError("Unknown endpoint for straight track.")
 
     def get_angle(self, entry_ep, exit_ep):
-        """
-        Returns angle of travel when moving from entry_ep to exit_ep.
-        """
+        """Returns angle of travel when moving from entry_ep to exit_ep."""
         if entry_ep == "A" and exit_ep == "B":
             return self.angle
         elif entry_ep == "B" and exit_ep == "A":
