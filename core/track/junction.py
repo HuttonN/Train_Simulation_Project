@@ -1,15 +1,28 @@
 import pygame
 import math
 
-from utils.geometry import quadratic_bezier, bezier_derivative, distance, bezier_speed
+from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
 
 class JunctionTrack(pygame.sprite.Sprite):
     """
     Represents a simple junction with a main (straight) branch and a diverging (left or right) branch.
+    Endpoints: 'A' (start), 'S' (straight end), 'C' (curve end).
     """
 
-    def __init__(self, grid, start_row, start_col, straight_end_row, straight_end_col, curve_control_row, curve_control_col, curve_end_row, curve_end_col, track_id="None", branch_activated = False):
+    ENDPOINTS = ["A", "S", "C"]
+
+    # --- Constructor ---------------------------------------------------------
+
+    def __init__(
+            self, grid, 
+            start_row, start_col, 
+            straight_end_row, straight_end_col, 
+            curve_control_row, curve_control_col, 
+            curve_end_row, curve_end_col, 
+            track_id="None", 
+            branch_activated = False
+        ):
         super().__init__()
         self.grid = grid
         self.start_row = start_row
@@ -20,7 +33,10 @@ class JunctionTrack(pygame.sprite.Sprite):
         self.curve_control_col = curve_control_col
         self.curve_end_row = curve_end_row
         self.curve_end_col = curve_end_col
-        self.track_id = track_id or f"junction{start_row},{start_col}->{straight_end_row},{straight_end_col}or{curve_end_row}, {curve_end_col}"
+        self.track_id = (
+            track_id or 
+            f"junction{start_row},{start_col}->{straight_end_row},{straight_end_col}or{curve_end_row}, {curve_end_col}"
+        )
         self.branch_activated = branch_activated
 
         # Pixel coordinates of cell centers
@@ -36,10 +52,13 @@ class JunctionTrack(pygame.sprite.Sprite):
         # Precompute straight angle
         self.straight_angle = math.degrees(math.atan2(self.yS - self.yA, self.xS - self.xA))
 
+    # --- Endpoint Methods ----------------------------------------------------
+
     def get_endpoints(self):
         return ["A", "S", "C"]
     
     def get_endpoint_coords(self, ep):
+        """Returns pixel coordinates for the requested endpoint."""
         if ep == "A":
             return self.xA, self.yA
         elif ep == "S":
@@ -50,6 +69,7 @@ class JunctionTrack(pygame.sprite.Sprite):
             raise ValueError("Unknown endpoint: " + ep)
         
     def get_endpoint_grid(self, ep):
+        """Returns grid coordinates for the requested endpoint."""
         if ep == "A":
             return self.start_row, self.start_col
         elif ep == "S":
@@ -59,8 +79,10 @@ class JunctionTrack(pygame.sprite.Sprite):
         else:
             raise ValueError("Unknown endpoint: " + ep)
         
+    # --- Geometry and Movement Methods ---------------------------------------
+        
     def get_angle(self, entry_ep, exit_ep):
-        # Returns the angle of travel for a movement from entry_ep to exit_ep
+        """Returns the angle of travel for a movement from entry_ep to exit_ep."""
         if {entry_ep, exit_ep} == {"A", "S"}:
             # Forward: A->S (t=0), Reverse: S->A (t=1)
             if entry_ep == "A":
@@ -84,76 +106,9 @@ class JunctionTrack(pygame.sprite.Sprite):
             x_from, y_from = self.get_endpoint_coords(entry_ep)
             x_to, y_to = self.get_endpoint_coords(exit_ep)
             return math.degrees(math.atan2(y_to - y_from, x_to - x_from))
-
-    def curve_points(self):
-        return (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
-
-    def bezier_speed(self, t):
-        p0, p1, p2 = self.curve_points()
-        return bezier_speed(t, p0, p1, p2)
-
-    def total_arc_length(self):
-        # Accurate curve length via Simpson's rule
-        p0, p1, p2 = self.curve_points()
-        f = lambda t: bezier_speed(t, p0, p1, p2)
-        return simpson_integral(f, 0, 1, n=64)
-    
-    def arc_length_up_to_t(self, t):
-        # Returns arc length from t=0 to t (again via Simpson)
-        p0, p1, p2 = self.curve_points()
-        f = lambda u: bezier_speed(u, p0, p1, p2)
-        return simpson_integral(f, 0, t, n=32)
-    
-    def arc_length_to_t(self, s, direction="A_to_C", tol=1e-5, max_iter=20):
-        if direction == "A_to_C":
-            if s <= 0:
-                return 0.0
-            if s >= self.curve_length:
-                return 1.0
-            t = s / self.curve_length  # Initial guess
-            for _ in range(max_iter):
-                L = self.arc_length_up_to_t(t)
-                speed = self.bezier_speed(t)
-                if speed == 0:
-                    break
-                t_new = t - (L - s) / speed
-                if abs(t_new - t) < tol:
-                    return min(max(t_new, 0), 1)
-                t = min(max(t_new, 0), 1)
-            return t
-        elif direction == "C_to_A":
-            if s <= 0:
-                return 1.0
-            if s >= self.curve_length:
-                return 0.0
-            t = 1.0 - (s / self.curve_length)  # Initial guess
-            for _ in range(max_iter):
-                L = self.arc_length_up_to_t(t)
-                speed = self.bezier_speed(t)
-                if speed == 0:
-                    break
-                t_new = t - (self.curve_length - L - s) / (-speed)
-                if abs(t_new - t) < tol:
-                    return min(max(t_new, 0), 1)
-                t = min(max(t_new, 0), 1)
-            return t
-        else:
-            raise ValueError("direction must be 'A_to_C' or 'C_to_A'.")
-
-    def build_even_length_table(self, n_samples=150):
-        """
-        Precompute a list of t values corresponding to evenly-spaced distances along the curve.
-        (Optional, but useful for fast lookup and uniform train stepping.)
-        """
-        ts = []
-        L = self.curve_length
-        for i in range(n_samples + 1):
-            s = L * i / n_samples
-            t = self.arc_length_to_t(s, direction="A_to_C")
-            ts.append(t)
-        return ts
-    
+        
     def get_curve_point_and_angle(self, t, direction="A_to_C"):
+        """Returns a point and angle on the curve at parameter t (0 ≤ t ≤ 1)."""
         if direction == "C_to_A":
             t = 1 - t
         point = quadratic_bezier(t, (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC))
@@ -216,8 +171,80 @@ class JunctionTrack(pygame.sprite.Sprite):
                 train.x, train.y = target_x, target_y
                 train.row, train.col = target_grid
 
+    # --- Curve Length/Arc Methods --------------------------------------------
+
+    def curve_points(self):
+        """Returns the control points as tuples for the curve."""
+        return (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
+
+    def bezier_speed(self, t):
+        """Returns the speed along the Bezier curve at parameter t."""
+        p0, p1, p2 = self.curve_points()
+        return bezier_speed(t, p0, p1, p2)
+
+    def total_arc_length(self):
+        # Accurate curve length via Simpson's rule
+        p0, p1, p2 = self.curve_points()
+        f = lambda t: bezier_speed(t, p0, p1, p2)
+        return simpson_integral(f, 0, 1, n=64)
+    
+    def arc_length_up_to_t(self, t):
+        # Returns arc length from t=0 to t (again via Simpson)
+        p0, p1, p2 = self.curve_points()
+        f = lambda u: bezier_speed(u, p0, p1, p2)
+        return simpson_integral(f, 0, t, n=32)
+    
+    def arc_length_to_t(self, s, direction="A_to_C", tol=1e-5, max_iter=20):
+        """Given arc length s, solve for t along the curve (0 to 1 for A->C, 1 to 0 for C->A)."""
+        if direction == "A_to_C":
+            if s <= 0:
+                return 0.0
+            if s >= self.curve_length:
+                return 1.0
+            t = s / self.curve_length  # Initial guess
+            for _ in range(max_iter):
+                L = self.arc_length_up_to_t(t)
+                speed = self.bezier_speed(t)
+                if speed == 0:
+                    break
+                t_new = t - (L - s) / speed
+                if abs(t_new - t) < tol:
+                    return min(max(t_new, 0), 1)
+                t = min(max(t_new, 0), 1)
+            return t
+        elif direction == "C_to_A":
+            if s <= 0:
+                return 1.0
+            if s >= self.curve_length:
+                return 0.0
+            t = 1.0 - (s / self.curve_length)  # Initial guess
+            for _ in range(max_iter):
+                L = self.arc_length_up_to_t(t)
+                speed = self.bezier_speed(t)
+                if speed == 0:
+                    break
+                t_new = t - (self.curve_length - L - s) / (-speed)
+                if abs(t_new - t) < tol:
+                    return min(max(t_new, 0), 1)
+                t = min(max(t_new, 0), 1)
+            return t
+        else:
+            raise ValueError("direction must be 'A_to_C' or 'C_to_A'.")
+
+    def build_even_length_table(self, n_samples=150):
+        """Precompute a list of t values corresponding to evenly-spaced distances along the curve."""
+        ts = []
+        L = self.curve_length
+        for i in range(n_samples + 1):
+            s = L * i / n_samples
+            t = self.arc_length_to_t(s, direction="A_to_C")
+            ts.append(t)
+        return ts
+    
+    # --- Rendering Methods ---------------------------------------------------
+
     def draw_track(self, surface, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
-        # Draw the curve and straight, highlighting the active branch
+        """Draws the curve and straight, highlighting the active branch."""
         curve_points = [quadratic_bezier(
             t/(n_curve_points-1),
             (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
@@ -228,6 +255,3 @@ class JunctionTrack(pygame.sprite.Sprite):
         else:
             pygame.draw.lines(surface, non_activated_color, False, curve_points, 5)
             pygame.draw.line(surface, activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
-
-
-
