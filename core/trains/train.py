@@ -2,6 +2,7 @@ import pygame
 from core.track.straight import StraightTrack
 from core.track.curve import CurvedTrack
 from core.track.junction import JunctionTrack  # For future use!
+from core.route import Route
 
 class Train(pygame.sprite.Sprite):
     """
@@ -20,6 +21,7 @@ class Train(pygame.sprite.Sprite):
         self.colour = colour
         self.player_controlled = player_controlled
 
+        self.route = None
         self.current_track = None
         self.entry_ep = None
         self.exit_ep = None
@@ -36,7 +38,7 @@ class Train(pygame.sprite.Sprite):
         self.image_rect = None
         self.load_image()
 
-    # --- Start/Stop Methods --------------------------------------------------
+    # --- Start/Stop Methods (not currently used)--------------------------------------------------
 
     def stop(self):
         self.stopped = True
@@ -107,37 +109,7 @@ class Train(pygame.sprite.Sprite):
         Move the train along its current track segment (straight, curve, or junction).
         Uses entry_ep and exit_ep to determine direction.
         """
-        track = self.current_track
-
-        if isinstance(track, StraightTrack):
-            target_grid = track.get_endpoint_grid(self.exit_ep)
-            target_x, target_y = track.get_endpoint_coords(self.exit_ep)
-            dx = target_x - self.x
-            dy = target_y - self.y
-            dist = (dx ** 2 + dy ** 2) ** 0.5
-            if dist > self.speed:
-                self.x += dx / dist * self.speed
-                self.y += dy / dist * self.speed
-            else:
-                self.x, self.y = target_x, target_y
-                self.row, self.col = target_grid
-
-        elif isinstance(track, CurvedTrack):
-            direction = "A_to_B" if (self.entry_ep == "A" and self.exit_ep == "B") else "B_to_A"
-            if direction == "A_to_B":
-                self.s_on_curve = min(self.s_on_curve + self.speed, track.curve_length)
-                t = track.arc_length_to_t(self.s_on_curve, direction="A_to_B")
-            else:
-                self.s_on_curve = max(self.s_on_curve - self.speed, 0)
-                t = track.arc_length_to_t(self.s_on_curve, direction="B_to_A")
-            (self.x, self.y), self.angle = track.get_point_and_angle(t, direction=direction)
-            if direction == "A_to_B" and self.s_on_curve >= track.curve_length:
-                self.row, self.col = track.get_endpoint_grid("B")
-            elif direction == "B_to_A" and self.s_on_curve <= 0:
-                self.row, self.col = track.get_endpoint_grid("A")
-
-        elif isinstance(track, JunctionTrack): # Maybe move logic from junction to train
-            track.move_along_segment(self, self.speed, self.entry_ep, self.exit_ep)
+        self.current_track.move_along_segment(self, self.speed, self.entry_ep, self.exit_ep)
 
     # --- Rendering Methods ---------------------------------------------------
 
@@ -161,4 +133,38 @@ class Train(pygame.sprite.Sprite):
         """Returns True if the train is at the center of its current grid cell."""
         expected_x, expected_y = self.grid.grid_to_screen(self.row, self.col)
         return abs(self.x - expected_x) < 1 and abs(self.y - expected_y) < 1
+    
+    def set_route(self, route: Route):
+        self.route = route
+        self.route.current_index = 0
+
+    def travel_route(self):
+        if self.stopped or self.route is None or self.route.is_finished():
+            return
+        
+        self.move_along_segment()
+
+        if self.at_segment_end():
+            self.route.advance()
+            next_segment = self.route.get_current_segment()
+            if next_segment:
+                self.enter_segment(*next_segment)
+            else:
+                self.stop()
+
+    def at_segment_end(self):
+        if isinstance(self.current_track, StraightTrack):
+            tx, ty = self.current_track.get_endpoint_coords(self.exit_ep)
+            return abs(self.x - tx) < 1 and abs(self.y - ty) < 1
+        
+        elif isinstance(self.current_track, CurvedTrack):
+            if self.entry_ep == "A":
+                return self.s_on_curve >= self.current_track.curve_length
+            else:
+                return self.s_on_curve <= 0
+            
+        elif isinstance(self.current_track, JunctionTrack):
+            return self.current_track.has_reached_endpoint(self,self.exit_ep)
+        
+        return False
     

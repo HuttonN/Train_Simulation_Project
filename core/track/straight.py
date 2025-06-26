@@ -82,15 +82,8 @@ class StraightTrack(BaseTrack):
         Moves the train along the segment between the given endpoints.
         (Consistent API with StraightTrack/CurvedTrack)
         """
-        # Straight movement
-        if entry_ep == "A":
-            # Forward
-            target_x, target_y = self.xS, self.yS
-            target_grid = (self.straight_end_row, self.straight_end_col)
-        else:
-            # Reverse
-            target_x, target_y = self.xA, self.yA
-            target_grid = (self.start_row, self.start_col)
+        target_x, target_y = self.get_endpoint_coords(exit_ep)
+        target_grid = self.get_endpoint_grid(exit_ep)
         dx = target_x - train.x
         dy = target_y - train.y
         dist = (dx ** 2 + dy ** 2) ** 0.5
