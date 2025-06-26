@@ -155,6 +155,27 @@ class CurvedTrack(BaseTrack):
             return t
         else:
             raise ValueError("direction must be 'A_to_B' or 'B_to_A'.")
+        
+    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+        """
+        Moves the train along the segment between the given endpoints.
+        (Consistent API with StraightTrack/CurvedTrack)
+        """
+    
+        if {entry_ep, exit_ep} == {"A", "B"}:
+            # Curve movement
+            if entry_ep == "A":
+                train.s_on_curve = min(train.s_on_curve + speed, self.curve_length)
+                t = self.arc_length_to_t(train.s_on_curve, direction="A_to_B")
+                (train.x, train.y), train.angle = self.get_point_and_angle(t, direction="A_to_B")
+                if train.s_on_curve >= self.curve_length:
+                    train.row, train.col = self.curve_end_row, self.curve_end_col
+            else:
+                train.s_on_curve = max(train.s_on_curve - speed, 0)
+                t = self.arc_length_to_t(train.s_on_curve, direction="B_to_A")
+                (train.x, train.y), train.angle = self.get_point_and_angle(t, direction="B_to_A")
+                if train.s_on_curve <= 0:
+                    train.row, train.col = self.start_row, self.start_col
 
     # --- Rendering Methods ---------------------------------------------------
 

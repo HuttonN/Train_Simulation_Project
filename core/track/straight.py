@@ -76,3 +76,27 @@ class StraightTrack(BaseTrack):
     def draw_track(self, surface, color=(200, 180, 60)):
         """Draws the straight track on the given surface"""
         pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)
+
+    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+        """
+        Moves the train along the segment between the given endpoints.
+        (Consistent API with StraightTrack/CurvedTrack)
+        """
+        # Straight movement
+        if entry_ep == "A":
+            # Forward
+            target_x, target_y = self.xS, self.yS
+            target_grid = (self.straight_end_row, self.straight_end_col)
+        else:
+            # Reverse
+            target_x, target_y = self.xA, self.yA
+            target_grid = (self.start_row, self.start_col)
+        dx = target_x - train.x
+        dy = target_y - train.y
+        dist = (dx ** 2 + dy ** 2) ** 0.5
+        if dist > speed:
+            train.x += dx / dist * speed
+            train.y += dy / dist * speed
+        else:
+            train.x, train.y = target_x, target_y
+            train.row, train.col = target_grid
