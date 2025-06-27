@@ -14,7 +14,7 @@ class JunctionTrack(BaseTrack):
 
     ENDPOINTS = ["A", "S", "C"]
 
-    # --- Constructor ---------------------------------------------------------
+    #region --- Constructor ---------------------------------------------------------
 
     def __init__(
             self, grid, 
@@ -66,7 +66,9 @@ class JunctionTrack(BaseTrack):
         # Precompute straight angle
         self.straight_angle = math.degrees(math.atan2(self.yS - self.yA, self.xS - self.xA))
 
-    # --- Endpoint Methods ----------------------------------------------------
+    #endregion
+
+    #region --- Endpoint Methods ----------------------------------------------------
 
     def get_endpoints(self):
         return ["A", "S", "C"]
@@ -92,8 +94,10 @@ class JunctionTrack(BaseTrack):
             return self.curve_end_row, self.curve_end_col
         else:
             raise ValueError("Unknown endpoint: " + ep)
-        
-    # --- Control / State Methods ---------------------------------------
+
+    #endregion 
+
+    #region --- Control / State Methods ---------------------------------------------
         
     def activate_branch(self):
         """Activate the diverging (curve) branch. 'A' connects to 'C'."""
@@ -111,11 +115,13 @@ class JunctionTrack(BaseTrack):
         """
         if {entry_ep, exit_ep} == {"A", "S"}:
             return not self.branch_activated
-        if {entry_ep, exit_ep}:
+        if {entry_ep, exit_ep} == {"A", "C"}:
             return self.branch_activated
         return True
+    
+    #endregion
 
-    # --- Geometry and Movement Methods ---------------------------------------
+    #region --- Geometry & Movement Methods -----------------------------------------
         
     def get_angle(self, entry_ep, exit_ep):
         """Returns the angle of travel for a movement from entry_ep to exit_ep."""
@@ -143,7 +149,7 @@ class JunctionTrack(BaseTrack):
             x_to, y_to = self.get_endpoint_coords(exit_ep)
             return math.degrees(math.atan2(y_to - y_from, x_to - x_from))
         
-    def get_curve_point_and_angle(self, t, direction="A_to_C"):
+    def get_point_and_angle(self, t, direction="A_to_C"):
         """Returns a point and angle on the curve at parameter t (0 ≤ t ≤ 1)."""
         if direction == "C_to_A":
             t = 1 - t
@@ -207,7 +213,9 @@ class JunctionTrack(BaseTrack):
                 train.x, train.y = target_x, target_y
                 train.row, train.col = target_grid
 
-    # --- Curve Length/Arc Methods --------------------------------------------
+    #endregion
+
+    #region --- Curve Length/Arc Methods --------------------------------------------
 
     def curve_points(self):
         """Returns the control points as tuples for the curve."""
@@ -277,7 +285,9 @@ class JunctionTrack(BaseTrack):
             ts.append(t)
         return ts
     
-    # --- Rendering Methods ---------------------------------------------------
+    #endregion
+    
+    #region --- Rendering Methods ---------------------------------------------------
 
     def draw_track(self, surface, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
         """Draws the curve and straight, highlighting the active branch."""
@@ -291,3 +301,5 @@ class JunctionTrack(BaseTrack):
         else:
             pygame.draw.lines(surface, non_activated_color, False, curve_points, 5)
             pygame.draw.line(surface, activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
+
+    #endregion

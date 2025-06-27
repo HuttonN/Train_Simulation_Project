@@ -1,7 +1,7 @@
 import pygame
 from core.track.straight import StraightTrack
 from core.track.curve import CurvedTrack
-from core.track.junction import JunctionTrack  # For future use!
+from core.track.junction import JunctionTrack
 from core.route import Route
 
 class Train(pygame.sprite.Sprite):
@@ -10,7 +10,7 @@ class Train(pygame.sprite.Sprite):
     Uses entry/exit endpoints to abstract direction.
     """
 
-    # --- Constructor ---------------------------------------------------------
+    #region --- Constructor ---------------------------------------------------------
 
     def __init__(self, row, col, grid, colour="red", player_controlled=False):
         super().__init__()
@@ -38,32 +38,45 @@ class Train(pygame.sprite.Sprite):
         self.image_rect = None
         self.load_image()
 
-    # --- Start/Stop Methods (not currently used)--------------------------------------------------
+    def load_image(self):
+        """Loads the train image for the specified colour."""
+        self.image = pygame.image.load(
+            f"assets/images/train_{self.colour}.png"
+        ).convert_alpha()
 
-    def stop(self):
-        self.stopped = True
-        self.speed = 0
+    #endregion
 
-    def start(self):
-        self.stopped = False
-        self.speed = 3
+    #region --- Control/Routing Methods ---------------------------------------------
 
-    # --- Control/Routing Methods ---------------------------------------------
+    def set_route(self, route: Route):
+        """
+        Assigns a new route to the train and resets its route progress.
 
-    def request_junction_branch(self):
-        if isinstance(self.current_track, JunctionTrack):
-            junction = self.current_track
-            if not junction.is_branch_set_for(self.entry_ep, self.exit_ep):
-                if {self.entry_ep, self.exit_ep} == {"A", "C"}:
-                    self.stop()
-                    junction.activate_branch()
-                    self.start()
-                elif {self.entry_ep, self.exit_ep} == {"A", "C"}:
-                    self.stop()
-                    junction.deactivate_branch()
-                    self.start()
+        Arguments:
+            route: The sequence of track segments the train should follow.
+        """
+        self.route = route
+        self.route.current_index = 0
 
-    # --- Segment Transition Methods ------------------------------------------
+    def travel_route(self):
+        """
+        Advances the train along its current route.
+
+        Moves the train along its current segment, and transitions to the next one when complete.
+        If the route is finished, the train stops.
+        """
+        if self.stopped or self.route is None or self.route.is_finished():
+            return
+        
+        self.move_along_segment()
+
+        if self.at_segment_end():
+            self.route.advance()
+            next_segment = self.route.get_current_segment()
+            if next_segment:
+                self.enter_segment(*next_segment)
+            else:
+                self.stop()
 
     def enter_segment(self, track_piece, entry_ep, exit_ep):
         """
@@ -79,30 +92,46 @@ class Train(pygame.sprite.Sprite):
         self.row, self.col = grid_pos
         self.x, self.y = pixel_pos
 
-        if isinstance(track_piece, StraightTrack):
-            self.angle = track_piece.get_angle(entry_ep, exit_ep)
+        self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "curve_length", 0)
+        self.angle = track_piece.get_angle(entry_ep, exit_ep)
 
-        elif isinstance(track_piece, CurvedTrack):
-            # Set curve position depending on direction
-            if entry_ep == "A" and exit_ep == "B":
-                self.s_on_curve = 0
-            elif entry_ep == "B" and exit_ep == "A":
-                self.s_on_curve = track_piece.curve_length
-            else:
-                raise ValueError("Invalid endpoint pair for CurvedTrack.")
-            self.angle = track_piece.get_angle(entry_ep, exit_ep)
 
-        elif isinstance(track_piece, JunctionTrack):
-            # Set s_on_curve if entering on curve
-            if {entry_ep, exit_ep} == {"A", "S"} or {entry_ep, exit_ep} == {"S", "A"}:
-                self.angle = track_piece.get_angle(entry_ep, exit_ep)
-            elif {entry_ep, exit_ep} == {"A", "C"}:
-                self.s_on_curve = 0 if entry_ep == "A" else track_piece.curve_length
-                self.angle = track_piece.get_angle(entry_ep, exit_ep)
-            else:
-                self.angle = track_piece.get_angle(entry_ep, exit_ep)
+    def request_junction_branch(self):
+        """
+        Requests the correct branch configuration on a junction.
 
-    # --- Movement Methods ----------------------------------------------------
+        If the train is on a junction and the desired entry/exit path is not active,
+        it stops the train, activates the appropriate branch, and then resumes movement.
+        """
+        if isinstance(self.current_track, JunctionTrack):
+            junction = self.current_track
+            if not junction.is_branch_set_for(self.entry_ep, self.exit_ep):
+                if {self.entry_ep, self.exit_ep} == {"A", "C"}:
+                    self.stop()
+                    junction.activate_branch()
+                    self.start()
+                elif {self.entry_ep, self.exit_ep} == {"A", "S"}:
+                    self.stop()
+                    junction.deactivate_branch()
+                    self.start()
+
+    def stop(self):
+        """
+        Halts the train by setting speed to zero and marking it as stopped.
+        """
+        self.stopped = True
+        self.speed = 0
+
+    def start(self):
+        """
+        Resumes the train's movement by restoring its default speed and clearing the stopped flag.
+        """
+        self.stopped = False
+        self.speed = 3
+
+    #endregion
+
+    #region --- Movement Methods ----------------------------------------------------
 
     def move_along_segment(self):
         """
@@ -111,48 +140,13 @@ class Train(pygame.sprite.Sprite):
         """
         self.current_track.move_along_segment(self, self.speed, self.entry_ep, self.exit_ep)
 
-    # --- Rendering Methods ---------------------------------------------------
-
-    def draw(self, surface):
-        """Draws the train, rotated according to its current angle."""
-        if self.image is None:
-            raise RuntimeError("Train image not loaded.")
-        self.rotated_image = pygame.transform.rotate(self.image, -self.angle)
-        self.image_rect = self.rotated_image.get_rect(center=(self.x, self.y))
-        surface.blit(self.rotated_image, self.image_rect)
-
-    # --- Utility Methods -----------------------------------------------------
-
-    def load_image(self):
-        """Loads the train image for the specified colour."""
-        self.image = pygame.image.load(
-            f"assets/images/train_{self.colour}.png"
-        ).convert_alpha()
-
-    def at_cell_center(self):
-        """Returns True if the train is at the center of its current grid cell."""
-        expected_x, expected_y = self.grid.grid_to_screen(self.row, self.col)
-        return abs(self.x - expected_x) < 1 and abs(self.y - expected_y) < 1
-    
-    def set_route(self, route: Route):
-        self.route = route
-        self.route.current_index = 0
-
-    def travel_route(self):
-        if self.stopped or self.route is None or self.route.is_finished():
-            return
-        
-        self.move_along_segment()
-
-        if self.at_segment_end():
-            self.route.advance()
-            next_segment = self.route.get_current_segment()
-            if next_segment:
-                self.enter_segment(*next_segment)
-            else:
-                self.stop()
-
     def at_segment_end(self):
+        """
+        Checks whether the train has reached the end of its current segment.
+
+        Returns:
+            bool: True if the train has arrived at its exit endpoint, False otherwise.
+        """
         if isinstance(self.current_track, StraightTrack):
             tx, ty = self.current_track.get_endpoint_coords(self.exit_ep)
             return abs(self.x - tx) < 1 and abs(self.y - ty) < 1
@@ -168,3 +162,25 @@ class Train(pygame.sprite.Sprite):
         
         return False
     
+    #endregion
+
+    #region --- Rendering Methods ---------------------------------------------------
+
+    def draw(self, surface):
+        """Draws the train, rotated according to its current angle."""
+        if self.image is None:
+            raise RuntimeError("Train image not loaded.")
+        self.rotated_image = pygame.transform.rotate(self.image, -self.angle)
+        self.image_rect = self.rotated_image.get_rect(center=(self.x, self.y))
+        surface.blit(self.rotated_image, self.image_rect)
+
+    #endregion
+
+    #region --- Utility Methods -----------------------------------------------------
+
+    def at_cell_center(self):
+        """Returns True if the train is at the center of its current grid cell."""
+        expected_x, expected_y = self.grid.grid_to_screen(self.row, self.col)
+        return abs(self.x - expected_x) < 1 and abs(self.y - expected_y) < 1
+    
+    #endregion

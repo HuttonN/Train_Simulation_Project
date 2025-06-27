@@ -11,7 +11,7 @@ class StraightTrack(BaseTrack):
 
     ENDPOINTS = ["A", "B"]
 
-    # --- Constructor ---------------------------------------------------------
+    #region --- Constructor ---------------------------------------------------------
 
     def __init__(self, grid, start_row, start_col, end_row, end_col, track_id=None):
         super().__init__()
@@ -23,21 +23,23 @@ class StraightTrack(BaseTrack):
         self.track_id = track_id or f"Straight:{start_row},{start_col}->{end_row},{end_col}"
         
         # Get pixel coordinates of cell centers
-        self.x0, self.y0 = self.grid.grid_to_screen(start_row, start_col)
-        self.x1, self.y1 = self.grid.grid_to_screen(end_row, end_col)
+        self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
+        self.xB, self.yB = self.grid.grid_to_screen(end_row, end_col)
         self.angle = math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
 
         # DRY endpoint maps
         self._endpoint_coords = {
-            "A": (self.x0, self.y0),
-            "B": (self.x1, self.y1)
+            "A": (self.xA, self.yA),
+            "B": (self.xB, self.yB)
         }
         self._endpoint_grids = {
             "A": (self.start_row, self.start_col),
             "B": (self.end_row, self.end_col)
         }
 
-    # --- Endpoint Methods ----------------------------------------------------
+    #endregion
+
+    #region --- Endpoint Methods ----------------------------------------------------
 
     def get_endpoints(self):
         return ["A", "B"]
@@ -45,9 +47,9 @@ class StraightTrack(BaseTrack):
     def get_endpoint_coords(self, endpoint):
         """Returns pixel coordinates for the requested endpoint label."""
         if endpoint == "A":
-            return self.x0, self.y0
+            return self.xA, self.yA
         elif endpoint == "B":
-            return self.x1, self.y1
+            return self.xB, self.yB
         else:
             raise ValueError("Unknown endpoint for straight track.")
 
@@ -60,7 +62,9 @@ class StraightTrack(BaseTrack):
         else:
             raise ValueError("Unknown endpoint for straight track.")
         
-    # --- Geometry Methods ----------------------------------------------------
+    #endregion
+
+    #region --- Geometry Methods ----------------------------------------------------
 
     def get_angle(self, entry_ep, exit_ep):
         """Returns angle of travel when moving from entry_ep to exit_ep."""
@@ -71,12 +75,20 @@ class StraightTrack(BaseTrack):
         else:
             raise ValueError("Invalid endpoint pair for straight track.")
         
-    # --- Rendering Methods ----------------------------------------------------
+    def get_point_and_angle(self, t, direction):
+        """
+        For compatibility with base API. Straight tracks do not support Bezier curves,
+        so this returns interpolated point and angle along the straight segment.
+        """
+        if direction == "B_to_A":
+            t = 1-t
 
-    def draw_track(self, surface, color=(200, 180, 60)):
-        """Draws the straight track on the given surface"""
-        pygame.draw.line(surface, color, (self.x0, self.y0), (self.x1, self.y1), 5)
+        x = (1-t) * self.xA + t * self.xB
+        y = (1-t) * self.yA + t * self.yB
 
+        angle = self.get_angle("A", "B")
+        return (x, y), angle
+        
     def move_along_segment(self, train, speed, entry_ep, exit_ep):
         """
         Moves the train along the segment between the given endpoints.
@@ -93,3 +105,13 @@ class StraightTrack(BaseTrack):
         else:
             train.x, train.y = target_x, target_y
             train.row, train.col = target_grid
+
+    #endregion
+        
+    #region --- Rendering Methods ---------------------------------------------------
+
+    def draw_track(self, surface, color=(200, 180, 60)):
+        """Draws the straight track on the given surface"""
+        pygame.draw.line(surface, color, (self.xA, self.yA), (self.xB, self.yB), 5)
+
+    #endregion
