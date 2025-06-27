@@ -4,6 +4,8 @@ from core.track.curve import CurvedTrack
 from core.track.junction import JunctionTrack
 from core.route import Route
 
+from core.trains.carriage import Carriage
+
 class Train(pygame.sprite.Sprite):
     """
     Represents a train that can traverse any track segment, in any direction.
@@ -12,7 +14,7 @@ class Train(pygame.sprite.Sprite):
 
     #region --- Constructor ---------------------------------------------------------
 
-    def __init__(self, row, col, grid, colour="red", player_controlled=False):
+    def __init__(self, row, col, grid, carriages, colour="red", player_controlled=False):
         super().__init__()
         self.row = row
         self.col = col
@@ -32,6 +34,8 @@ class Train(pygame.sprite.Sprite):
         self.curve_speed = 3
         self.reverse = False     # Whether traversing in reverse direction
         self.stopped = False
+
+        self.carriages = carriages
 
         self.image = None
         self.rotated_image = None
@@ -184,3 +188,11 @@ class Train(pygame.sprite.Sprite):
         return abs(self.x - expected_x) < 1 and abs(self.y - expected_y) < 1
     
     #endregion
+
+    def board_passengers(self, passenger_list):
+        still_to_board = passenger_list
+        for carriage in self.carriages:
+            still_to_board = carriage.load(still_to_board)
+            if not still_to_board:
+                break
+        return still_to_board
