@@ -52,7 +52,7 @@ class Train(pygame.sprite.Sprite):
 
     #region --- Control/Routing Methods ---------------------------------------------
 
-    def set_route(self, route: Route):
+    def set_route(self, route):
         """
         Assigns a new route to the train and resets its route progress.
 
@@ -60,7 +60,10 @@ class Train(pygame.sprite.Sprite):
             route: The sequence of track segments the train should follow.
         """
         self.route = route
-        self.route.current_index = 0
+        segment = self.route.get_current_segment()
+        if segment:
+            track, entry_ep, exit_ep = segment
+            self.enter_segment(track, entry_ep, exit_ep)
 
     def travel_route(self):
         """
@@ -98,6 +101,8 @@ class Train(pygame.sprite.Sprite):
 
         self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "curve_length", 0)
         self.angle = track_piece.get_angle(entry_ep, exit_ep)
+
+        self.request_junction_branch()
 
 
     def request_junction_branch(self):
@@ -151,20 +156,7 @@ class Train(pygame.sprite.Sprite):
         Returns:
             bool: True if the train has arrived at its exit endpoint, False otherwise.
         """
-        if isinstance(self.current_track, StraightTrack):
-            tx, ty = self.current_track.get_endpoint_coords(self.exit_ep)
-            return abs(self.x - tx) < 1 and abs(self.y - ty) < 1
-        
-        elif isinstance(self.current_track, CurvedTrack):
-            if self.entry_ep == "A":
-                return self.s_on_curve >= self.current_track.curve_length
-            else:
-                return self.s_on_curve <= 0
-            
-        elif isinstance(self.current_track, JunctionTrack):
-            return self.current_track.has_reached_endpoint(self,self.exit_ep)
-        
-        return False
+        return self.current_track.has_reached_endpoint(self,self.exit_ep)
     
     #endregion
 

@@ -43,3 +43,6 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
     def get_point_and_angle(self, t, direction):
         """Return a point and angle along a curve or segment (if applicable)."""
         pass
+
+    def has_reached_endpoint(self, train, exit_ep):
+        raise NotImplementedError("Must be implemented by subclass.")

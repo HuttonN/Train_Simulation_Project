@@ -137,6 +137,16 @@ class CurvedTrack(BaseTrack):
         elif direction == "C_to_A" and train.s_on_curve <= 0:
             train.row, train.col = self.start_row, self.start_col
 
+    def has_reached_endpoint(self, train, exit_ep):
+        """
+        Returns True if the train has reached the end of the curve in the current direction.
+        """
+        # We use s_on_curve and the direction
+        if train.entry_ep == "A":
+            return train.s_on_curve >= self.curve_length
+        else:
+            return train.s_on_curve <= 0
+
     #endregion
 
     #region --- Arc-Length & Parameter Conversion -----------------------------------

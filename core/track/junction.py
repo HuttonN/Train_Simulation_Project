@@ -189,13 +189,13 @@ class JunctionTrack(BaseTrack):
             if entry_ep == "A":
                 train.s_on_curve = min(train.s_on_curve + speed, self.curve_length)
                 t = self.arc_length_to_t(train.s_on_curve, direction="A_to_C")
-                (train.x, train.y), train.angle = self.get_curve_point_and_angle(t, direction="A_to_C")
+                (train.x, train.y), train.angle = self.get_point_and_angle(t, direction="A_to_C")
                 if train.s_on_curve >= self.curve_length:
                     train.row, train.col = self.curve_end_row, self.curve_end_col
             else:
                 train.s_on_curve = max(train.s_on_curve - speed, 0)
                 t = self.arc_length_to_t(train.s_on_curve, direction="C_to_A")
-                (train.x, train.y), train.angle = self.get_curve_point_and_angle(t, direction="C_to_A")
+                (train.x, train.y), train.angle = self.get_point_and_angle(t, direction="C_to_A")
                 if train.s_on_curve <= 0:
                     train.row, train.col = self.start_row, self.start_col
         else:
@@ -212,6 +212,24 @@ class JunctionTrack(BaseTrack):
             else:
                 train.x, train.y = target_x, target_y
                 train.row, train.col = target_grid
+
+    def has_reached_endpoint(self, train, exit_ep):
+        """
+        Returns True if the train has arrived at the requested exit endpoint on the junction.
+        Handles both straight and curve branches.
+        """
+        if {train.entry_ep, exit_ep} == {"A", "S"}:
+            tx, ty = self.get_endpoint_coords(exit_ep)
+            return abs(train.x - tx) < 1 and abs(train.y - ty) < 1
+        elif {train.entry_ep, exit_ep} == {"A", "C"}:
+            if train.entry_ep == "A":
+                return train.s_on_curve >= self.curve_length
+            else:
+                return train.s_on_curve <= 0
+        else:
+            # Fallback for rare/complex endpoint pairs (e.g., S <-> C): use coordinate check
+            tx, ty = self.get_endpoint_coords(exit_ep)
+            return abs(train.x - tx) < 1 and abs(train.y - ty) < 1
 
     #endregion
 

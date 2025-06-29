@@ -25,14 +25,14 @@ class StraightTrack(BaseTrack):
         # Get pixel coordinates of cell centers
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
         self.xB, self.yB = self.grid.grid_to_screen(end_row, end_col)
-        self.angle = math.degrees(math.atan2(self.y1 - self.y0, self.x1 - self.x0))
+        self.angle = math.degrees(math.atan2(self.yB - self.yA, self.xB - self.xA))
 
         # DRY endpoint maps
-        self._endpoint_coords = {
+        self.endpoint_coords = {
             "A": (self.xA, self.yA),
             "B": (self.xB, self.yB)
         }
-        self._endpoint_grids = {
+        self.endpoint_grids = {
             "A": (self.start_row, self.start_col),
             "B": (self.end_row, self.end_col)
         }
@@ -105,6 +105,13 @@ class StraightTrack(BaseTrack):
         else:
             train.x, train.y = target_x, target_y
             train.row, train.col = target_grid
+
+    def has_reached_endpoint(self, train, exit_ep):
+        """
+        Returns True if the train has arrived at the exit endpoint.
+        """
+        tx, ty = self.get_endpoint_coords(exit_ep)
+        return abs(train.x - tx) < 1 and abs(train.y - ty) < 1
 
     #endregion
         
