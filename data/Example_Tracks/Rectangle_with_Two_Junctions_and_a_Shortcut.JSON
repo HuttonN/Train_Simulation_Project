@@ -1,0 +1,64 @@
+{
+    "tracks": [
+        {
+            "id": "top_straight_1",
+            "type": "straight",
+            "start": [5, 5],
+            "end": [5, 15]
+        },
+        {
+            "id": "top_junction",
+            "type": "junction",
+            "start": [5, 15],
+            "straight_end": [5, 19],
+            "curve_control": [5, 18],
+            "curve_end": [7, 18]
+        },
+        {
+            "id": "top_straight2",
+            "type": "straight",
+            "start": [5, 19],
+            "end": [5, 25]
+        },
+        {
+            "id": "tr_curve",
+            "type": "curve",
+            "start": [5, 25],
+            "control": [10, 25],
+            "end": [15, 25]
+        },
+        {
+            "id": "right_straight",
+            "type": "straight",
+            "start": [15, 25],
+            "end": [15, 15]
+        },
+        {
+            "id": "bottom_junction",
+            "type": "junction",
+            "start": [15, 15],
+            "straight_end": [15, 15],
+            "curve_control": [15, 18],
+            "curve_end": [13, 18]
+        },
+        {
+            "id": "bottom_straight2",
+            "type": "straight",
+            "start": [15, 15],
+            "end": [15, 5]
+        },
+        {
+            "id": "bl_curve",
+            "type": "curve",
+            "start": [15, 5],
+            "control": [10, 5],
+            "end": [5, 5]
+        },
+        {
+            "id": "shortcut",
+            "type": "straight",
+            "start": [7, 18],
+            "end": [13, 18]
+        }
+  ]
+}
