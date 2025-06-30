@@ -1,5 +1,4 @@
 import json
-import os
 
 from core.track.straight import StraightTrack
 from core.track.curve import CurvedTrack
