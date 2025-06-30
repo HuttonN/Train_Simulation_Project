@@ -27,7 +27,6 @@
             "control": [5, 28],
             "end": [8, 28]
         },
-
         {
             "id": "right_straight",
             "type": "straight",

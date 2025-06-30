@@ -6,10 +6,6 @@ Includes:
     - get_segment_length: Compute the geometric length of a track segment, supporting both straight and curved tracks.
 """
 
-import math
-from core.track.curve    import CurvedTrack
-from core.track.junction import JunctionTrack   #  ← NEW import
-
 def get_segment_length(track, entry_ep=None, exit_ep=None):
     """
     Returns the segment length for a track (works for straight, curve, junction).
