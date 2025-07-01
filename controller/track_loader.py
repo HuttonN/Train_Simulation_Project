@@ -19,5 +19,7 @@ def load_track_layout(json_path, grid):
             object = JunctionTrack(grid, *track['start'], *track['straight_end'], *track['curve_control'], *track['curve_end'])
         else:
             raise ValueError(f"Unknown track type: {track['type']}")
+        if "connections" in track:
+            object.connections = track["connections"]
         track_objects[tid] = object
     return track_objects
