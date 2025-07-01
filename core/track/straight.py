@@ -122,3 +122,19 @@ class StraightTrack(BaseTrack):
         pygame.draw.line(surface, color, (self.xA, self.yA), (self.xB, self.yB), 5)
 
     #endregion
+
+    def get_length(self, entry_ep, exit_ep):
+        x1, y1 = self.get_endpoint_coords(entry_ep)
+        x2, y2 = self.get_endpoint_coords(exit_ep)
+        return ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
+    
+    def get_position_at_distance(self, entry_ep, exit_ep, s):
+        length = self.get_length(entry_ep, exit_ep)
+        t = s / length if length != 0 else 0
+        if t > 1: t = 1
+        x1, y1 = self.get_endpoint_coords(entry_ep)
+        x2, y2 = self.get_endpoint_coords(exit_ep)
+        x = (1 - t) * x1 + t * x2
+        y = (1 - t) * y1 + t * y2
+        angle = self.get_angle(entry_ep, exit_ep)
+        return (x, y, angle)

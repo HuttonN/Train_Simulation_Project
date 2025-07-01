@@ -242,3 +242,15 @@ class CurvedTrack(BaseTrack):
         return ts
     
     #endregion
+
+    def get_length(self, entry_ep, exit_ep):
+        return self.curve_length
+    
+    def get_position_at_distance(self, entry_ep, exit_ep, s):
+        length = self.get_length(entry_ep, exit_ep)
+        direction = "A_to_C" if entry_ep == "A" and exit_ep == "C" else "C_to_A"
+        # Ensure s in [0, length]
+        s = max(0, min(s, length))
+        t = self.arc_length_to_t(s, direction=direction)
+        (x, y), angle = self.get_point_and_angle(t, direction=direction)
+        return (x, y, angle)

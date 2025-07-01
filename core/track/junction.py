@@ -321,3 +321,40 @@ class JunctionTrack(BaseTrack):
             pygame.draw.line(surface, activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
 
     #endregion
+
+    def get_length(self, entry_ep, exit_ep):
+        # Handle straight (A<->S)
+        if {entry_ep, exit_ep} == {"A", "S"}:
+            x1, y1 = self.get_endpoint_coords(entry_ep)
+            x2, y2 = self.get_endpoint_coords(exit_ep)
+            return ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
+        # Handle curve (A<->C)
+        elif {entry_ep, exit_ep} == {"A", "C"}:
+            return self.curve_length
+        else:
+            # Not a direct connection: could be extended, for now just return 0
+            return 0
+
+    def get_position_at_distance(self, entry_ep, exit_ep, s):
+        if {entry_ep, exit_ep} == {"A", "S"}:
+            length = self.get_length(entry_ep, exit_ep)
+            t = s / length if length != 0 else 0
+            if t > 1: t = 1
+            x1, y1 = self.get_endpoint_coords(entry_ep)
+            x2, y2 = self.get_endpoint_coords(exit_ep)
+            x = (1 - t) * x1 + t * x2
+            y = (1 - t) * y1 + t * y2
+            angle = self.get_angle(entry_ep, exit_ep)
+            return (x, y, angle)
+        elif {entry_ep, exit_ep} == {"A", "C"}:
+            length = self.get_length(entry_ep, exit_ep)
+            direction = "A_to_C" if entry_ep == "A" and exit_ep == "C" else "C_to_A"
+            s = max(0, min(s, length))
+            t = self.arc_length_to_t(s, direction=direction)
+            (x, y), angle = self.get_point_and_angle(t, direction=direction)
+            return (x, y, angle)
+        else:
+            # Not a direct connection
+            x, y = self.get_endpoint_coords(entry_ep)
+            angle = self.get_angle(entry_ep, exit_ep)
+            return (x, y, angle)
