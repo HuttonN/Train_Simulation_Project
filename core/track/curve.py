@@ -49,10 +49,6 @@ class CurvedTrack(BaseTrack):
 
     #region --- Endpoint Methods ----------------------------------------------------
 
-    def get_endpoints(self):
-        """Returns endpoint labels as a class-level constant."""
-        return ["A", "C"]
-
     def get_endpoint_coords(self, endpoint):
         """Returns pixel coordinates for the requested endpoint."""
         if endpoint == "A":
