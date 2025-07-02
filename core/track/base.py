@@ -6,8 +6,8 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
     Base class for all track pieces, providing common endpoint methods.
     Subclasses must define:
       - ENDPOINTS: list of valid endpoint labels
-      - _endpoint_coords: dict mapping endpoint -> (x, y)
-      - _endpoint_grids: dict mapping endpoint -> (row, col)
+      - endpoint_coords: dict mapping endpoint -> (x, y)
+      - endpoint_grids: dict mapping endpoint -> (row, col)
     """
 
     ENDPOINTS = []
