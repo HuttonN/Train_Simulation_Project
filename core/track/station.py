@@ -14,13 +14,13 @@ class StationTrack(StraightTrack):
     """
     STATION_COLOUR = (220, 170, 50)
     TEXT_COLOUR = (30, 30, 30)
-    STATION_WIDTH = 22
+    STATION_WIDTH = 44
     STATION_LENGTH = 100
-    PLATFORM_WIDTH = 10
-    PLATFORM_LENGTH = 200
+    PLATFORM_WIDTH = 20
     PLATFORM_COLOUR = (220, 100, 5) 
 
     GAP_SIZE = 8
+    MIN_PLATFORM_LENGTH = 190  # pixels. Ensures that maximum number of passengers that can board a train (max 5 carriages and 30 per carriage) can fit on platform.
 
     #region --- Constructor ---------------------------------------------------------
 
@@ -42,6 +42,12 @@ class StationTrack(StraightTrack):
         self.passenger_count = passenger_count
         self.position = bool(position)  # True=one side, False=other
 
+        segment_length = math.hypot(self.xB - self.xA)
+        if segment_length < self.MIN_PLATFORM_LENGTH:
+            raise ValueError(
+                f"StationTrack '{self.name}' is too short: {segment_length:.1f}px (minimum {self.MIN_PLATFORM_LENGTH}px needed)."
+            )
+        self.PLATFORM_LENGTH = segment_length # ensures it matches the length of the track piece
     #endregion
 
     #region --- Methods -------------------------------------------------------------
