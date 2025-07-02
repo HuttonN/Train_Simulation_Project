@@ -48,12 +48,12 @@ class JunctionTrack(BaseTrack):
         self.xC, self.yC = self.grid.grid_to_screen(curve_end_row, curve_end_col)
 
         # Endpoint maps
-        self._endpoint_coords = {
+        self.endpoint_coords = {
             "A": (self.xA, self.yA),
             "S": (self.xS, self.yS),
             "C": (self.xC, self.yC)
         }
-        self._endpoint_grids = {
+        self.endpoint_grids = {
             "A": (self.start_row, self.start_col),
             "S": (self.straight_end_row, self.straight_end_col),
             "C": (self.curve_end_row, self.curve_end_col)
@@ -67,35 +67,6 @@ class JunctionTrack(BaseTrack):
         self.straight_angle = math.degrees(math.atan2(self.yS - self.yA, self.xS - self.xA))
 
     #endregion
-
-    #region --- Endpoint Methods ----------------------------------------------------
-
-    def get_endpoints(self):
-        return ["A", "S", "C"]
-    
-    def get_endpoint_coords(self, ep):
-        """Returns pixel coordinates for the requested endpoint."""
-        if ep == "A":
-            return self.xA, self.yA
-        elif ep == "S":
-            return self.xS, self.yS
-        elif ep == "C":
-            return self.xC, self.yC
-        else:
-            raise ValueError("Unknown endpoint: " + ep)
-        
-    def get_endpoint_grid(self, ep):
-        """Returns grid coordinates for the requested endpoint."""
-        if ep == "A":
-            return self.start_row, self.start_col
-        elif ep == "S":
-            return self.straight_end_row, self.straight_end_col
-        elif ep == "C":
-            return self.curve_end_row, self.curve_end_col
-        else:
-            raise ValueError("Unknown endpoint: " + ep)
-
-    #endregion 
 
     #region --- Control / State Methods ---------------------------------------------
         

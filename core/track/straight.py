@@ -51,28 +51,6 @@ class StraightTrack(BaseTrack):
 
     #endregion
 
-    #region --- Endpoint Methods ----------------------------------------------------
-    
-    def get_endpoint_coords(self, endpoint):
-        """Return pixel (x, y) coordinates for a given endpoint label."""
-        if endpoint == "A":
-            return self.xA, self.yA
-        elif endpoint == "B":
-            return self.xB, self.yB
-        else:
-            raise ValueError("Unknown endpoint for straight track.")
-
-    def get_endpoint_grid(self, endpoint):
-        """Return grid (row, col) coordinates for a given endpoint label."""
-        if endpoint == "A":
-            return self.start_row, self.start_col
-        elif endpoint == "B":
-            return self.end_row, self.end_col
-        else:
-            raise ValueError("Unknown endpoint for straight track.")
-        
-    #endregion
-
     #region --- Geometry Methods ----------------------------------------------------
 
     def get_angle(self, entry_ep, exit_ep):

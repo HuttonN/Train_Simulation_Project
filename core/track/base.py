@@ -19,15 +19,23 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
         """Returns endpoint labels as a class-level constant"""
         return self.ENDPOINTS
     
-    @abstractmethod
     def get_endpoint_coords(self, endpoint):
-        """Returns (x, y) pixel coordinates for the given endpoint."""
-        pass
-
-    @abstractmethod
+        """
+        Return pixel (x, y) coordinates for a given endpoint label.
+        Raises ValueError if endpoint is not valid for this track piece.
+        """
+        if endpoint not in self.ENDPOINTS:
+            raise ValueError(f"Unknown endpoint '{endpoint}' for {self.__class__.__name__}.")
+        return self.endpoint_coords[endpoint]
+    
     def get_endpoint_grid(self, endpoint):
-        """Returns (row, col) grid coordinates for the given endpoint."""
-        pass
+        """
+        Return grid (row, col) coordinates for a given endpoint label.
+        Raises ValueError if endpoint is not valid for this track piece.
+        """
+        if endpoint not in self.ENDPOINTS:
+            raise ValueError(f"Unknown endpoint '{endpoint}' for {self.__class__.__name__}.")
+        return self.endpoint_grids[endpoint]
 
     @abstractmethod
     def get_angle(self, entry_ep, exit_ep):

@@ -2,14 +2,15 @@ import pygame
 import math
 
 from core.track.base import BaseTrack
-
 from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
 
 class CurvedTrack(BaseTrack):
     """
     Represents a quadratic Bezier curve between two endpoints, with control point.
-    Endpoints are labeled 'A' (start) and 'C' (end).
+    ENDPOINTS:
+        - "A": Start of curve.
+        - "C": End of curve.
     """
 
     ENDPOINTS = ["A", "C"]
@@ -17,6 +18,17 @@ class CurvedTrack(BaseTrack):
     #region --- Constructor ---------------------------------------------------------
     
     def __init__(self, grid, start_row, start_col, control_row, control_col, end_row, end_col, track_id = None):
+        """
+        Initialise a curved track segment.
+
+        Arguments:
+            grid: Grid object for coordinate conversion.
+            start_row, start_col: Grid coordinates for endpoint "A".
+            control_row, control_col: Grid coordinates for Bezier control point.
+            end_row, end_col: Grid coordinates for endpoint "C".
+            track_id (str, optional): Unique identifier for this track piece.
+        """
+    
         super().__init__()
         self.grid = grid
         self.start_row = start_row
@@ -42,45 +54,58 @@ class CurvedTrack(BaseTrack):
             "C": (self.end_row, self.end_col)
         }
 
+        # Precompute arc length and even-t lookup table for uniform motion
         self.curve_length = self.total_arc_length()
         self.even_t_table = self.build_even_length_table(n_samples=150)
 
     #endregion
-
-    #region --- Endpoint Methods ----------------------------------------------------
-
-    def get_endpoint_coords(self, endpoint):
-        """Returns pixel coordinates for the requested endpoint."""
-        if endpoint == "A":
-            return self.xA, self.yA
-        elif endpoint == "C":
-            return self.xC, self.yC
-        else:
-            raise ValueError("Unknown endpoint for curve track.")
-
-    def get_endpoint_grid(self, endpoint):
-        """Returns grid coordinates for the requested endpoint."""
-        if endpoint == "A":
-            return self.start_row, self.start_col
-        elif endpoint == "C":
-            return self.end_row, self.end_col
-        else:
-            raise ValueError("Unknown endpoint for curve track.")
-        
-    #endregion
         
     #region --- Geometry and Movement Methods ---------------------------------------
 
-    def get_point_and_angle(self, t, direction="A_to_C"):
+    def get_length(self, entry_ep, exit_ep):
         """
-        Get a point and angle along the curve at parameter t (0 ≤ t ≤ 1).
+        Return total arc length of this Bezier curve segment.
 
-        Args:
-            t: The Bezier parameter (0=start, 1=end)
-            direction: "A_to_C" (default) or "C_to_A"
+        Arguments:
+            entry_ep (str): Start endpoint label.
+            exit_ep (str): End endpoint label.
+        Returns:
+            float: Arc length in pixels.
+        """
+        # For a quadratic curve, length is the same in either direction.
+        return self.curve_length
+    
+    def get_position_at_distance(self, entry_ep, exit_ep, s):
+        """
+        Return (x, y, angle) at distance s along the curve from entry_ep toward exit_ep.
+
+        Arguments:
+            entry_ep (str): Start endpoint label.
+            exit_ep (str): End endpoint label.
+            s (float): Distance along the curve (pixels).
 
         Returns:
-            (point, angle) where point is (x, y), angle is degrees CCW from x-axis
+            tuple: (x, y, angle) at the given distance.
+        """
+        length = self.get_length(entry_ep, exit_ep)
+        direction = "A_to_C" if entry_ep == "A" and exit_ep == "C" else "C_to_A"
+        # Ensure s in [0, length]
+        s = max(0, min(s, length))
+        t = self.arc_length_to_t(s, direction=direction)
+        (x, y), angle = self.get_point_and_angle(t, direction=direction)
+        return (x, y, angle)
+
+
+    def get_point_and_angle(self, t, direction="A_to_C"):
+        """
+        Return (x, y) position and tangent angle at parameter t (0=start, 1=end).
+
+        Arguments:
+            t (float): Bezier parameter in [0, 1].
+            direction (str): "A_to_C" (default) or "C_to_A" (reverse direction).
+
+        Returns:
+            tuple: ((x, y), angle in degrees).
         """
         if direction == "C_to_A":
             t = 1 - t
@@ -93,7 +118,14 @@ class CurvedTrack(BaseTrack):
     
     def get_angle(self, entry_ep, exit_ep):
         """
-        Returns angle of travel when moving from entry_ep to exit_ep at the start of the curve.
+        Return angle of travel at the start of the curve from entry_ep to exit_ep.
+
+        Arguments:
+            entry_ep (str): Entry endpoint label.
+            exit_ep (str): Exit endpoint label.
+
+        Returns:
+            float: Angle in degrees.
         """
         direction = "A_to_C" if (entry_ep == "A" and exit_ep == "C") else "C_to_A"
         dx, dy = bezier_derivative(0.0, (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC))
@@ -103,22 +135,13 @@ class CurvedTrack(BaseTrack):
             
     def move_along_segment(self, train, speed, entry_ep, exit_ep):
         """
-        Moves the train along the curved track segment based on its current progress.
-
-        This method is called on each update tick while the train is on this track.
-        It advances the train's arc length parameter (s), converts it to the corresponding
-        Bezier parameter (t), and updates the train's position and angle accordingly.
+        Advance the train along the Bezier curve based on current progress and speed.
 
         Arguments:
-            train: The train object moving along this segment.
-            speed: The number of pixels the train should travel this tick.
-            entry_ep: The endpoint the train entered from ("A" or "C").
-            exit_ep: The endpoint the train is heading toward ("A" or "C").
-
-        Notes:
-            - The train uses arc length (not parameter t) for uniform motion.
-            - The direction is inferred from the entry/exit endpoints.
-            - Updates train.x, train.y, train.angle, and train.grid position.
+            train: Train object being moved (should track s_on_curve).
+            speed (float): Distance to move (pixels).
+            entry_ep (str): Endpoint train entered from ("A" or "C").
+            exit_ep (str): Endpoint train is heading toward ("A" or "C").
         """
         direction = "A_to_C" if (entry_ep == "A" and exit_ep == "C") else "C_to_A"
         if direction == "A_to_C":
@@ -135,7 +158,14 @@ class CurvedTrack(BaseTrack):
 
     def has_reached_endpoint(self, train, exit_ep):
         """
-        Returns True if the train has reached the end of the curve in the current direction.
+        Check if the train has reached the end of the curve in the current direction.
+
+        Arguments:
+            train: Train object (should track s_on_curve and entry_ep).
+            exit_ep (str): Endpoint label being checked.
+
+        Returns:
+            bool: True if train has reached the exit endpoint.
         """
         # We use s_on_curve and the direction
         if train.entry_ep == "A":
@@ -149,7 +179,7 @@ class CurvedTrack(BaseTrack):
 
     def total_arc_length(self):
         """
-        Computes total arc length of the Bezier curve.
+        Compute the total arc length of the Bezier curve.
         """
         p0, p1, p2 = self.curve_points()
         f = lambda t: bezier_speed(t, p0, p1, p2)
@@ -157,7 +187,7 @@ class CurvedTrack(BaseTrack):
 
     def arc_length_up_to_t(self, t):
         """
-        Computes arc length from t=0 up to t.
+        Compute arc length from t=0 up to t (for arc length <-> parameter conversion).
         """
         p0, p1, p2 = self.curve_points()
         f = lambda u: bezier_speed(u, p0, p1, p2)
@@ -165,7 +195,16 @@ class CurvedTrack(BaseTrack):
     
     def arc_length_to_t(self, s, direction="A_to_C", tol=1e-5, max_iter=20):
         """
-        Given arc length s, solve for t along the curve (0 to 1 for A->C, 1 to 0 for C->A).
+        Convert arc length s to the corresponding Bezier parameter t.
+
+        Arguments:
+            s (float): Distance along the curve.
+            direction (str): "A_to_C" or "C_to_A".
+            tol (float): Tolerance for iterative solver.
+            max_iter (int): Maximum iterations.
+
+        Returns:
+            float: Bezier parameter t in [0, 1].
         """
         if direction == "A_to_C":
             if s <= 0:
@@ -228,7 +267,15 @@ class CurvedTrack(BaseTrack):
         return bezier_speed(t, p0, p1, p2)
     
     def build_even_length_table(self, n_samples=150):
-        """Precomputes a lookup table to map uniform arc length to parameter t for even movement."""
+        """
+        Precompute a lookup table to map uniform arc length to parameter t for even movement.
+
+        Arguments:
+            n_samples (int): Number of table entries.
+
+        Returns:
+            list: Lookup table of t values corresponding to evenly spaced arc lengths.
+        """
         ts = []
         L = self.curve_length
         for i in range(n_samples + 1):
@@ -238,15 +285,3 @@ class CurvedTrack(BaseTrack):
         return ts
     
     #endregion
-
-    def get_length(self, entry_ep, exit_ep):
-        return self.curve_length
-    
-    def get_position_at_distance(self, entry_ep, exit_ep, s):
-        length = self.get_length(entry_ep, exit_ep)
-        direction = "A_to_C" if entry_ep == "A" and exit_ep == "C" else "C_to_A"
-        # Ensure s in [0, length]
-        s = max(0, min(s, length))
-        t = self.arc_length_to_t(s, direction=direction)
-        (x, y), angle = self.get_point_and_angle(t, direction=direction)
-        return (x, y, angle)
