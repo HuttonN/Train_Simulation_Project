@@ -3,6 +3,15 @@ import math
 from core.track.straight import StraightTrack
 
 class StationTrack(StraightTrack):
+    """
+    Represents a straight track section with an associated station platform.
+
+    Extends StraightTrack to add rendering of station platforms and display
+    of passenger count, and stores station-specific attributes such as name 
+    and passenger count.
+
+    Designed for use only on straight track sections.
+    """
     STATION_COLOUR = (220, 170, 50)
     TEXT_COLOUR = (30, 30, 30)
     STATION_WIDTH = 22
@@ -13,13 +22,37 @@ class StationTrack(StraightTrack):
 
     GAP_SIZE = 8
 
+    #region --- Constructor ---------------------------------------------------------
+
     def __init__(self, grid, start_row, start_col, end_row, end_col, name, passenger_count=0, track_id=None, position=True):
+        """
+        Initialises a StationTrack object representing a station platform on a straight track.
+
+        Arguments:
+            grid: The grid object for coordinate conversion.
+            start_row, start_col: Grid coordinates of one endpoint.
+            end_row, end_col: Grid coordinates of the other endpoint.
+            name (str): Station name.
+            passenger_count (int): Number of passengers currently waiting at the station.
+            track_id (str, optional): Identifier for the station track.
+            position (bool, optional): Platform side; True = one side, False = the other.
+        """
         super().__init__(grid, start_row, start_col, end_row, end_col, track_id=track_id or f"STN:{name}")
         self.name = name
         self.passenger_count = passenger_count
         self.position = bool(position)  # True=one side, False=other
 
+    #endregion
+
+    #region --- Methods -------------------------------------------------------------
+
     def draw_track(self, surface):
+        """
+        Draws the straight track and overlays the station platform and name label.
+
+        Arguments:
+            surface: Pygame surface to render onto.
+        """
         super().draw_track(surface)
 
         # Direction vectors
@@ -68,3 +101,5 @@ class StationTrack(StraightTrack):
         rotated_platform_rect = rotated_platform.get_rect(center=(platform_px, platform_py))
         surface.blit(rotated_surface, rotated_station_rect.topleft)
         surface.blit(rotated_platform, rotated_platform_rect.topleft)
+
+        #endregion
