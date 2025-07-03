@@ -1,6 +1,7 @@
 import pygame
 import math
 from core.track.straight import StraightTrack
+from core.passenger import Passenger
 
 class StationTrack(StraightTrack):
     """
@@ -24,7 +25,7 @@ class StationTrack(StraightTrack):
 
     #region --- Constructor ---------------------------------------------------------
 
-    def __init__(self, grid, start_row, start_col, end_row, end_col, name, passenger_count=0, track_id=None, position=True):
+    def __init__(self, grid, start_row, start_col, end_row, end_col, name, passenger_count=150, track_id=None, position=True):
         """
         Initialises a StationTrack object representing a station platform on a straight track.
 
@@ -41,6 +42,7 @@ class StationTrack(StraightTrack):
         self.name = name
         self.passenger_count = passenger_count
         self.position = bool(position)  # True=one side, False=other
+        self.track_id = track_id or f"StationTrack:{start_row},{start_col}->{end_row},{end_col}"
 
         segment_length = math.hypot(self.xB - self.xA)
         if segment_length < self.MIN_PLATFORM_LENGTH:
@@ -108,4 +110,57 @@ class StationTrack(StraightTrack):
         surface.blit(rotated_surface, rotated_station_rect.topleft)
         surface.blit(rotated_platform, rotated_platform_rect.topleft)
 
+        # 8. Draw waiting passengers as dots on the platform
+        if hasattr(self, "waiting_passengers"):
+            self.draw_passengers_on_platform(
+                surface, platform_px, platform_py, angle, self.waiting_passengers
+            )
+        else:
+            # fallback: draw dots for self.passenger_count
+            dummy_passengers = [Passenger(self, None) for _ in range(self.passenger_count)]
+            self.draw_passengers_on_platform(
+                surface, platform_px, platform_py, angle, dummy_passengers
+            )
+
         #endregion
+
+    def draw_passengers_on_platform(self, surface, base_x, base_y, angle, passenger_list):
+        """
+        Draws passengers as coloured dots on the station platform.
+        - base_x, base_y: center of the unrotated platform on the screen
+        - angle: rotation in degrees
+        - passenger_list: list of Passenger objects
+        """
+        DOT_RADIUS = 2
+        DOT_DIAM = DOT_RADIUS * 2
+        DOT_GAP = 1
+        GRID_CELL = DOT_DIAM + DOT_GAP
+
+        dots_per_row = int(self.PLATFORM_WIDTH // GRID_CELL)
+        dots_per_col = int(self.PLATFORM_LENGTH // GRID_CELL)
+
+        max_dots = dots_per_row * dots_per_col
+        n_passengers = min(len(passenger_list), max_dots)
+
+        # Always fill from one edge, row by row (e.g., "top" edge in unrotated platform)
+        dot_positions = []
+        for idx in range(n_passengers):
+            row = idx // dots_per_row
+            col = idx % dots_per_row
+            # Grid position, origin at center of platform
+            x = -self.PLATFORM_LENGTH/2 + GRID_CELL/2 + row * GRID_CELL
+            y = -self.PLATFORM_WIDTH/2 + GRID_CELL/2 + col * GRID_CELL
+
+            # Rotate to platform orientation
+            s = math.sin(math.radians(angle))
+            c = math.cos(math.radians(angle))
+            rot_x = c * x - s * y
+            rot_y = s * x + c * y
+            screen_x = int(base_x + rot_x)
+            screen_y = int(base_y + rot_y)
+            dot_positions.append((screen_x, screen_y))
+
+        # Draw the passenger dots (you can use each passenger's colour or a default)
+        for idx, pos in enumerate(dot_positions):
+            passenger = passenger_list[idx]
+            pygame.draw.circle(surface, passenger.colour, pos, DOT_RADIUS)
