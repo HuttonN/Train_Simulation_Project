@@ -26,5 +26,3 @@ def get_segment_length(track, entry_ep=None, exit_ep=None):
         return ((x1 - x0) ** 2 + (y1 - y0) ** 2) ** 0.5
     else:
         raise AttributeError("Track object does not have endpoints suitable for segment length calculation.")
-
-    
