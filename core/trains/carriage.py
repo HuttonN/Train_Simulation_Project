@@ -121,3 +121,9 @@ class Carriage(pygame.sprite.Sprite):
             self.passengers.remove(passenger)
         except ValueError:
             pass  # Already removed
+
+    def unload_passengers_to_station(self, station_id):
+        alighting = [passenger for passenger in self.passengers if passenger.destination_station.track_id == station_id]
+        for passenger in alighting:
+            self.remove_passenger(passenger)
+        return alighting

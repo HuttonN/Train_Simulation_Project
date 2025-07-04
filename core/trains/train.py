@@ -81,10 +81,11 @@ class Train(pygame.sprite.Sprite):
         self.move_along_segment()
 
         if self.at_segment_end():
-            # Stop and board passengers if we're at a station
+            # Stop and board/alight passengers if we're at a station
             if isinstance(self.current_track, StationTrack):
                 print(f"Train stopping at station: {self.current_track.name}")
                 self.stop()
+                self.alight_passengers_at_station(self.current_track)
                 self.board_passengers_from_station(self.current_track)
                 self.start()
             # Now move on to the next segment
@@ -227,6 +228,13 @@ class Train(pygame.sprite.Sprite):
                     break
         # Step 3: Tell the station to remove those who boarded
         station.remove_passengers(boarded)
+
+    def alight_passengers_at_station(self, station):
+        for carriage in self.carriages:
+            alighting = carriage.unload_passengers_to_station(station.track_id)
+            for passenger in alighting:
+                print(f"Passenger {passenger.id} alighting at station {station.track_id}")
+                passenger.alight(station)
     
     def update(self, surface):
         self.travel_route()
