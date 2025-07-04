@@ -106,7 +106,7 @@ class Carriage(pygame.sprite.Sprite):
         return len(self.passengers) < self.max_capacity
 
     def assign_seat(self, passenger):
-        # Assign the lowest unused seat index
+        """Assign passenger to lowest available seat, return seat index or None if full."""
         used_seats = set(getattr(p, "seat_index_in_carriage", None) for p in self.passengers)
         for idx in range(len(self.seat_grid)):
             if idx not in used_seats:
@@ -116,4 +116,8 @@ class Carriage(pygame.sprite.Sprite):
         return None  # No seat available
 
     def remove_passenger(self, passenger):
-        self.passengers.remove(passenger)
+        """Remove a passenger from this carriage."""
+        try:
+            self.passengers.remove(passenger)
+        except ValueError:
+            pass  # Already removed

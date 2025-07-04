@@ -85,7 +85,7 @@ class Train(pygame.sprite.Sprite):
             if isinstance(self.current_track, StationTrack):
                 print(f"Train stopping at station: {self.current_track.name}")
                 self.stop()
-                self.current_track.board_passengers_onto_train(self)
+                self.board_passengers_from_station(self.current_track)
                 self.start()
             # Now move on to the next segment
             self.route.advance()
@@ -212,13 +212,21 @@ class Train(pygame.sprite.Sprite):
     
     #endregion
 
-    def board_passengers(self, passenger_list):
-        still_to_board = passenger_list
-        for carriage in self.carriages:
-            still_to_board = carriage.load(still_to_board)
-            if not still_to_board:
-                break
-        return still_to_board
+    def board_passengers_from_station(self, station):
+        # Step 1: Get waiting passengers from station
+        waiting = station.get_waiting_passengers()
+        # Step 2: Find those eligible for this train's future route
+        eligible = [p for p in waiting if self.route.stops_at_station(p.destination_station.track_id)]
+        boarded = []
+        for p in eligible:
+            for carriage in self.carriages:
+                if carriage.has_space():
+                    carriage.assign_seat(p)
+                    p.board(self, carriage)
+                    boarded.append(p)
+                    break
+        # Step 3: Tell the station to remove those who boarded
+        station.remove_passengers(boarded)
     
     def update(self, surface):
         self.travel_route()

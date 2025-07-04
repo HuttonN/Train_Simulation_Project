@@ -159,24 +159,14 @@ class StationTrack(StraightTrack):
     def get_passenger_count(self):
         return len(self.waiting_passengers)
     
-    def board_passengers_onto_train(self, train):
-        eligible = []
-        for passenger in self.waiting_passengers:
-            dest_id = passenger.destination_station.track_id
-            if train.route.stops_at_station(dest_id):
-                eligible.append(passenger)
-
-        # Board as many as will fit
-        boarded = []
-        for passenger in eligible:
-            for carriage in train.carriages:
-                if carriage.has_space():
-                    seat_index = carriage.assign_seat(passenger)
-                    if seat_index is not None:
-                        passenger.board(train, carriage)
-                        boarded.append(passenger)
-                        break
-
-        # Remove boarded passengers from platform
-        for passenger in boarded:
-            self.waiting_passengers.remove(passenger)
+    def get_waiting_passengers(self):
+        """Return all passengers currently waiting at the station"""
+        return self.waiting_passengers
+    
+    def remove_passengers(self, passengers):
+        """Remove a list of passengers from the waiting list."""
+        for passenger in passengers:
+            try:
+                self.waiting_passengers.remove(passenger)
+            except ValueError:
+                pass
