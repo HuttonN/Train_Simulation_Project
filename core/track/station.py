@@ -1,7 +1,6 @@
 import pygame
 import math
 from core.track.straight import StraightTrack
-from core.passenger import Passenger
 
 class StationTrack(StraightTrack):
     """
@@ -19,13 +18,12 @@ class StationTrack(StraightTrack):
     STATION_LENGTH = 100
     PLATFORM_WIDTH = 20
     PLATFORM_COLOUR = (220, 100, 5) 
-
     GAP_SIZE = 8
     MIN_PLATFORM_LENGTH = 190  # pixels. Ensures that maximum number of passengers that can board a train (max 5 carriages and 30 per carriage) can fit on platform.
 
     #region --- Constructor ---------------------------------------------------------
 
-    def __init__(self, grid, start_row, start_col, end_row, end_col, name, passenger_count=150, track_id=None, position=True):
+    def __init__(self, grid, start_row, start_col, end_row, end_col, name, track_id, track_type, position=True):
         """
         Initialises a StationTrack object representing a station platform on a straight track.
 
@@ -38,11 +36,10 @@ class StationTrack(StraightTrack):
             track_id (str, optional): Identifier for the station track.
             position (bool, optional): Platform side; True = one side, False = the other.
         """
-        super().__init__(grid, start_row, start_col, end_row, end_col, track_id=track_id or f"STN:{name}")
+        super().__init__(grid, start_row, start_col, end_row, end_col, track_id, track_type)
         self.name = name
-        self.passenger_count = passenger_count
+        self.waiting_passengers = []
         self.position = bool(position)  # True=one side, False=other
-        self.track_id = track_id or f"StationTrack:{start_row},{start_col}->{end_row},{end_col}"
 
         segment_length = math.hypot(self.xB - self.xA)
         if segment_length < self.MIN_PLATFORM_LENGTH:
@@ -93,7 +90,7 @@ class StationTrack(StraightTrack):
         pygame.draw.rect(platform_surface, self.PLATFORM_COLOUR, (0, 0, self.PLATFORM_LENGTH, self.PLATFORM_WIDTH))
 
         # 5. Draw label in center
-        label = f"{self.name} ({self.passenger_count})"
+        label = f"{self.name} ({self.get_passenger_count()})"
         font = pygame.font.SysFont(None, 16)
         text = font.render(label, True, self.TEXT_COLOUR)
         text_rect = text.get_rect(center=(self.STATION_LENGTH / 2, self.STATION_WIDTH / 2))
@@ -111,20 +108,14 @@ class StationTrack(StraightTrack):
         surface.blit(rotated_platform, rotated_platform_rect.topleft)
 
         # 8. Draw waiting passengers as dots on the platform
-        if hasattr(self, "waiting_passengers"):
+        if self.get_passenger_count() > 0:
             self.draw_passengers_on_platform(
-                surface, platform_px, platform_py, angle, self.waiting_passengers
-            )
-        else:
-            # fallback: draw dots for self.passenger_count
-            dummy_passengers = [Passenger(self, None) for _ in range(self.passenger_count)]
-            self.draw_passengers_on_platform(
-                surface, platform_px, platform_py, angle, dummy_passengers
+                surface, platform_px, platform_py, angle
             )
 
         #endregion
 
-    def draw_passengers_on_platform(self, surface, base_x, base_y, angle, passenger_list):
+    def draw_passengers_on_platform(self, surface, base_x, base_y, angle):
         """
         Draws passengers as coloured dots on the station platform.
         - base_x, base_y: center of the unrotated platform on the screen
@@ -140,7 +131,7 @@ class StationTrack(StraightTrack):
         dots_per_col = int(self.PLATFORM_LENGTH // GRID_CELL)
 
         max_dots = dots_per_row * dots_per_col
-        n_passengers = min(len(passenger_list), max_dots)
+        n_passengers = min(self.get_passenger_count(), max_dots)
 
         # Always fill from one edge, row by row (e.g., "top" edge in unrotated platform)
         dot_positions = []
@@ -162,5 +153,30 @@ class StationTrack(StraightTrack):
 
         # Draw the passenger dots (you can use each passenger's colour or a default)
         for idx, pos in enumerate(dot_positions):
-            passenger = passenger_list[idx]
+            passenger = self.waiting_passengers[idx]
             pygame.draw.circle(surface, passenger.colour, pos, DOT_RADIUS)
+
+    def get_passenger_count(self):
+        return len(self.waiting_passengers)
+    
+    def board_passengers_onto_train(self, train):
+        eligible = []
+        for passenger in self.waiting_passengers:
+            dest_id = passenger.destination_station.track_id
+            if train.route.stops_at_station(dest_id):
+                eligible.append(passenger)
+
+        # Board as many as will fit
+        boarded = []
+        for passenger in eligible:
+            for carriage in train.carriages:
+                if carriage.has_space():
+                    seat_index = carriage.assign_seat(passenger)
+                    if seat_index is not None:
+                        passenger.board(train, carriage)
+                        boarded.append(passenger)
+                        break
+
+        # Remove boarded passengers from platform
+        for passenger in boarded:
+            self.waiting_passengers.remove(passenger)

@@ -2,6 +2,7 @@ import pygame
 from core.track.straight import StraightTrack
 from core.track.curve import CurvedTrack
 from core.track.junction import JunctionTrack
+from core.track.station import StationTrack
 from core.route import Route
 
 from core.trains.carriage import Carriage
@@ -69,30 +70,31 @@ class Train(pygame.sprite.Sprite):
             route: The sequence of track segments the train should follow.
         """
         self.route = route
-        segment = self.route.get_current_segment()
-        if segment:
-            track, entry_ep, exit_ep = segment
-            self.enter_segment(track, entry_ep, exit_ep)
+        step = self.route.get_current_step()
+        if step:
+            self.enter_segment(step["track_obj"], step["entry"], step["exit"])
 
     def travel_route(self):
-        """
-        Advances the train along its current route.
-
-        Moves the train along its current segment, and transitions to the next one when complete.
-        If the route is finished, the train stops.
-        """
         if self.stopped or self.route is None or self.route.is_finished():
             return
-        
+
         self.move_along_segment()
 
         if self.at_segment_end():
+            # Stop and board passengers if we're at a station
+            if isinstance(self.current_track, StationTrack):
+                print(f"Train stopping at station: {self.current_track.name}")
+                self.stop()
+                self.current_track.board_passengers_onto_train(self)
+                self.start()
+            # Now move on to the next segment
             self.route.advance()
-            next_segment = self.route.get_current_segment()
-            if next_segment:
-                self.enter_segment(*next_segment)
+            next_step = self.route.get_current_step()
+            if next_step:
+                self.enter_segment(next_step["track_obj"], next_step["entry"], next_step["exit"])
             else:
                 self.stop()
+
 
     def enter_segment(self, track_piece, entry_ep, exit_ep):
         """
@@ -132,6 +134,26 @@ class Train(pygame.sprite.Sprite):
                     self.stop()
                     junction.deactivate_branch()
                     self.start()
+
+    def stop_at_station(self):
+        """
+        If train is at a station (with stop?=True at this segment and at segment end), 
+        stop, board all eligible passengers, then resume.
+        """
+        # Check: Are we at a station, with stop? True, and at the end of the segment?
+        step = self.route.get_current_step()
+        if (
+            isinstance(self.current_track, StationTrack)
+            and step is not None
+            and step.get("stop?", False)
+            and self.at_segment_end()
+        ):
+            print(f"Train stopping at station: {self.current_track.name}")
+            self.stop()
+            # Board passengers from station onto this train
+            self.current_track.board_passengers_onto_train(self)
+            # (Optional: add a delay before starting, for realism. For now, resume instantly:)
+            self.start()
 
     def stop(self):
         """
@@ -200,6 +222,7 @@ class Train(pygame.sprite.Sprite):
     
     def update(self, surface):
         self.travel_route()
+        self.stop_at_station()
         self.record_position_history()
         self.update_carriages(surface)
         # self.prune_position_history()

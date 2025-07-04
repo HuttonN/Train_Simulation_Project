@@ -17,7 +17,7 @@ class CurvedTrack(BaseTrack):
 
     #region --- Constructor ---------------------------------------------------------
     
-    def __init__(self, grid, start_row, start_col, control_row, control_col, end_row, end_col, track_id = None):
+    def __init__(self, grid, start_row, start_col, control_row, control_col, end_row, end_col, track_id, track_type):
         """
         Initialise a curved track segment.
 
@@ -29,7 +29,7 @@ class CurvedTrack(BaseTrack):
             track_id (str, optional): Unique identifier for this track piece.
         """
     
-        super().__init__()
+        super().__init__(grid, track_id, track_type)
         self.grid = grid
         self.start_row = start_row
         self.start_col = start_col
@@ -37,7 +37,6 @@ class CurvedTrack(BaseTrack):
         self.control_col = control_col
         self.end_row = end_row
         self.end_col = end_col
-        self.track_id = track_id or f"curve{start_row},{start_col}->{end_row},{end_col}"
 
         # Pixel coordinates
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)

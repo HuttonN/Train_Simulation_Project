@@ -1,19 +1,15 @@
 import pygame
 
 class Passenger(pygame.sprite.Sprite):
-
-    
-
     def __init__(self, origin_station, destination_station, group_size = 1, colour=None):
-
         self.id = 1
-        
         self.origin_station = origin_station
         self.destination_station = destination_station
         self.group_size = group_size
         self.status = "waiting"
         self.current_location = origin_station
         self.colour = colour or (120, 255, 255)
+        self.seat_index_in_carriage = None
 
     def board(self, train, carriage):
         self.status = "onboard"

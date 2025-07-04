@@ -22,11 +22,10 @@ class JunctionTrack(BaseTrack):
             straight_end_row, straight_end_col, 
             curve_control_row, curve_control_col, 
             curve_end_row, curve_end_col, 
-            track_id="None", 
+            track_id, track_type,
             branch_activated = False
         ):
-        super().__init__()
-        self.grid = grid
+        super().__init__(grid, track_id, track_type)
         self.start_row = start_row
         self.start_col = start_col
         self.straight_end_row = straight_end_row
@@ -35,10 +34,6 @@ class JunctionTrack(BaseTrack):
         self.curve_control_col = curve_control_col
         self.curve_end_row = curve_end_row
         self.curve_end_col = curve_end_col
-        self.track_id = (
-            track_id or 
-            f"junction{start_row},{start_col}->{straight_end_row},{straight_end_col}or{curve_end_row}, {curve_end_col}"
-        )
         self.branch_activated = branch_activated
 
         # Pixel coordinates of cell centers

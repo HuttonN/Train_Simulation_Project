@@ -3,17 +3,27 @@ from abc import ABC, abstractmethod
 
 class BaseTrack(pygame.sprite.Sprite, ABC):
     """
-    Base class for all track pieces, providing common endpoint methods.
-    Subclasses must define:
-      - ENDPOINTS: list of valid endpoint labels
+    Abstract base class for all track pieces.
+
+    Common interface:
+      - track_id: unique string identifier (from JSON)
+      - track_type: type string (e.g., "straight", "curve", "station", "junction")
+      - ENDPOINTS: class-level list of valid endpoint labels
       - endpoint_coords: dict mapping endpoint -> (x, y)
       - endpoint_grids: dict mapping endpoint -> (row, col)
+      - connections: dict mapping endpoint -> connection info (set after construction)
+
+    Subclasses must implement geometry and movement methods.
     """
 
     ENDPOINTS = []
 
-    def __init__(self):
+    def __init__(self, grid, track_id, track_type):
         super().__init__()
+        self.grid = grid
+        self.track_id = track_id
+        self.track_type = track_type
+        self.connections = {} # Will be set by loader after initialisation
 
     def get_endpoints(self):
         """Returns endpoint labels as a class-level constant"""
@@ -25,7 +35,9 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
         Raises ValueError if endpoint is not valid for this track piece.
         """
         if endpoint not in self.ENDPOINTS:
-            raise ValueError(f"Unknown endpoint '{endpoint}' for {self.__class__.__name__}.")
+            raise ValueError(
+                f"Unknown endpoint '{endpoint}' for {self.__class__.__name__} (ID: {self.track_id})."
+            )
         return self.endpoint_coords[endpoint]
     
     def get_endpoint_grid(self, endpoint):
@@ -34,7 +46,9 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
         Raises ValueError if endpoint is not valid for this track piece.
         """
         if endpoint not in self.ENDPOINTS:
-            raise ValueError(f"Unknown endpoint '{endpoint}' for {self.__class__.__name__}.")
+            raise ValueError(
+                f"Unknown endpoint '{endpoint}' for {self.__class__.__name__} (ID: {self.track_id})."
+            )
         return self.endpoint_grids[endpoint]
 
     @abstractmethod
@@ -53,4 +67,8 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
         pass
 
     def has_reached_endpoint(self, train, exit_ep):
-        raise NotImplementedError("Must be implemented by subclass.")
+        """Check if the train has reached the exit endpoint on this track."""
+        pass
+    
+    def __repr__(self):
+        return f"<{self.__class__.__name__} id='{self.track_id}' type='{self.track_type}'>"

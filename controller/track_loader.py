@@ -12,17 +12,17 @@ def load_track_layout(json_path, grid):
     track_objects = {}
     for track in data['tracks']:
         tid = track['id']
-        if track['type'] == 'straight':
-            object = StraightTrack(grid, *track['start'], *track['end'])
-        elif track['type'] == 'curve':
-            object = CurvedTrack(grid, *track['start'], *track['control'], *track['end'])
-        elif track['type'] == 'junction':
-            object = JunctionTrack(grid, *track['start'], *track['straight_end'], *track['curve_control'], *track['curve_end'])
-        elif track['type'] == 'station':
-            object = StationTrack(grid, *track['start'], *track['end'], track['name'])
+        ttype = track['type']
+        if ttype == 'straight':
+            track_object = StraightTrack(grid, *track['start'], *track['end'], tid, ttype)
+        elif ttype == 'curve':
+            track_object = CurvedTrack(grid, *track['start'], *track['control'], *track['end'], tid, ttype)
+        elif ttype == 'junction':
+            track_object = JunctionTrack(grid, *track['start'], *track['straight_end'], *track['curve_control'], *track['curve_end'], tid, ttype)
+        elif ttype == 'station':
+            track_object = StationTrack(grid, *track['start'], *track['end'], track['name'], tid, ttype)
         else:
-            raise ValueError(f"Unknown track type: {track['type']}")
-        if "connections" in track:
-            object.connections = track["connections"]
-        track_objects[tid] = object
+            raise ValueError(f"Unknown track type: {ttype}")
+        track_object.connections = track["connections"]
+        track_objects[tid] = track_object
     return track_objects

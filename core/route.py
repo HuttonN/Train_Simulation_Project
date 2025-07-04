@@ -1,15 +1,21 @@
 class Route:
-    def __init__(self, segments):
-        self.segments = segments
+    def __init__(self, steps):
+        self.steps = steps          # List of dicts, one per segment
         self.current_index = 0
 
-    def get_current_segment(self):
-        if self.current_index < len(self.segments):
-            return self.segments[self.current_index]
+    def get_current_step(self):
+        if self.current_index < len(self.steps):
+            return self.steps[self.current_index]
         return None
     
     def advance(self):
         self.current_index += 1
 
     def is_finished(self):
-        return self.current_index >= len(self.segments)
+        return self.current_index >= len(self.steps)
+
+    def stops_at_station(self, station_id):
+        return any(
+            step["track_id"] == station_id and step.get("stop?", False)
+            for step in self.steps
+        )

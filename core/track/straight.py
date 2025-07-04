@@ -16,7 +16,7 @@ class StraightTrack(BaseTrack):
 
     #region --- Constructor ---------------------------------------------------------
 
-    def __init__(self, grid, start_row, start_col, end_row, end_col, track_id=None):
+    def __init__(self, grid, start_row, start_col, end_row, end_col, track_id, track_type):
         """
         Initialise a straight track segment.
 
@@ -26,13 +26,11 @@ class StraightTrack(BaseTrack):
             end_row, end_col: Grid coordinates for endpoint "B".
             track_id (str, optional): Unique identifier for this track piece.
         """
-        super().__init__()
-        self.grid = grid
+        super().__init__(grid, track_id, track_type)
         self.start_row = start_row
         self.start_col = start_col
         self.end_row = end_row
         self.end_col = end_col
-        self.track_id = track_id or f"Straight:{start_row},{start_col}->{end_row},{end_col}"
         
         # Get pixel coordinates of cell centers
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
