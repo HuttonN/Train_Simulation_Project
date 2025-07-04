@@ -56,3 +56,16 @@ def bezier_speed(t, start_point, control_point, end_point):
     """
     dx, dy = bezier_derivative(t, start_point, control_point, end_point)
     return math.hypot(dx, dy)
+
+def closest_point_on_segment(px, py, x1, y1, x2, y2):
+    """
+    Returns the closest point on segment [(x1, y1), (x2, y2)] to point (px, py).
+    """
+    # Vector from A to B
+    dx, dy = x2 - x1, y2 - y1
+    if dx == dy == 0:
+        return (x1, y1)  # Segment is a point
+    # Vector from A to P
+    t = ((px - x1) * dx + (py - y1) * dy) / (dx * dx + dy * dy)
+    t = max(0, min(1, t))  # Clamp t to [0, 1]
+    return (x1 + t * dx, y1 + t * dy)

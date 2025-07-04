@@ -1,6 +1,7 @@
 import pygame
 import math
 from core.track.straight import StraightTrack
+from utils.geometry import closest_point_on_segment
 
 class StationTrack(StraightTrack):
     """
@@ -39,6 +40,7 @@ class StationTrack(StraightTrack):
         super().__init__(grid, start_row, start_col, end_row, end_col, track_id, track_type)
         self.name = name
         self.waiting_passengers = []
+        self.alighting_passengers = []
         self.position = bool(position)  # True=one side, False=other
 
         segment_length = math.hypot(self.xB - self.xA)
@@ -170,3 +172,75 @@ class StationTrack(StraightTrack):
                 self.waiting_passengers.remove(passenger)
             except ValueError:
                 pass
+
+    def get_platform_corners(self):
+        """
+        Returns a list of the four corners (x, y) of the platform rectangle,
+        in screen coordinates, in order: [top_left, top_right, bottom_right, bottom_left]
+        (relative to the platform's orientation).
+        """
+        # Platform center and angle as before
+        dx = self.xB - self.xA
+        dy = self.yB - self.yA
+        length = math.hypot(dx, dy)
+        ux, uy = dx / length, dy / length
+        side = 1 if self.position else -1
+        perp_x, perp_y = -uy * side, ux * side
+        mx, my = (self.xA + self.xB) / 2, (self.yA + self.yB) / 2
+
+        platform_offset = self.GAP_SIZE + self.PLATFORM_WIDTH / 2
+        pcx = mx + perp_x * platform_offset
+        pcy = my + perp_y * platform_offset
+
+        angle = math.atan2(dy, dx)
+        half_L = self.PLATFORM_LENGTH / 2
+        half_W = self.PLATFORM_WIDTH / 2
+
+        # Corners in platform local coordinates (centered, unrotated)
+        # Order: [(-L/2, -W/2), (L/2, -W/2), (L/2, W/2), (-L/2, W/2)]
+        corners_local = [
+            (-half_L, -half_W),
+            ( half_L, -half_W),
+            ( half_L,  half_W),
+            (-half_L,  half_W),
+        ]
+
+        # Rotate and translate each to global coordinates
+        c, s = math.cos(angle), math.sin(angle)
+        corners_global = []
+        for lx, ly in corners_local:
+            gx = c * lx - s * ly + pcx
+            gy = s * lx + c * ly + pcy
+            corners_global.append((gx, gy))
+        return corners_global
+
+    def get_platform_edges(self):
+        """
+        Returns the four edges of the platform as a list of line segments:
+        [((x1, y1), (x2, y2)), ...] in the same order as corners.
+        """
+        corners = self.get_platform_corners()
+        # Connect consecutive corners
+        edges = []
+        for i in range(4):
+            start = corners[i]
+            end = corners[(i+1)%4]
+            edges.append((start, end))
+        return edges
+    
+    def get_platform_entry_point(self, carriage_pos):
+        """
+        Given a (x, y) carriage position, returns the point on the platform edge
+        closest to the carriage.
+        """
+        cx, cy = carriage_pos
+        edges = self.get_platform_edges()
+        closest_point = None
+        min_dist2 = float('inf')
+        for (x1, y1), (x2, y2) in edges:
+            px, py = closest_point_on_segment(cx, cy, x1, y1, x2, y2)
+            dist2 = (px - cx) ** 2 + (py - cy) ** 2
+            if dist2 < min_dist2:
+                min_dist2 = dist2
+                closest_point = (px, py)
+        return closest_point
