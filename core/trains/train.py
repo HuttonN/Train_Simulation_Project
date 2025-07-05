@@ -3,6 +3,7 @@ from core.track.straight import StraightTrack
 from core.track.curve import CurvedTrack
 from core.track.junction import JunctionTrack
 from core.track.station import StationTrack
+from core.track.double_curve_junction import DoubleCurveJunctionTrack
 from core.route import Route
 
 from core.trains.carriage import Carriage
@@ -111,7 +112,13 @@ class Train(pygame.sprite.Sprite):
         self.row, self.col = grid_pos
         self.x, self.y = pixel_pos
 
-        self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "curve_length", 0)
+        if isinstance(self.current_track, DoubleCurveJunctionTrack):
+            if {self.entry_ep, self.exit_ep} == {"A", "L"}:
+                self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "left_curve_length", 0)
+            else:
+                self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "right_curve_length", 0)
+        else: 
+            self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "curve_length", 0)
         self.angle = track_piece.get_angle(entry_ep, exit_ep)
 
         self.request_junction_branch()
@@ -124,17 +131,27 @@ class Train(pygame.sprite.Sprite):
         If the train is on a junction and the desired entry/exit path is not active,
         it stops the train, activates the appropriate branch, and then resumes movement.
         """
-        if isinstance(self.current_track, JunctionTrack):
+        if isinstance(self.current_track, JunctionTrack) or isinstance(self.current_track, DoubleCurveJunctionTrack):
             junction = self.current_track
             if not junction.is_branch_set_for(self.entry_ep, self.exit_ep):
-                if {self.entry_ep, self.exit_ep} == {"A", "C"}:
-                    self.stop()
-                    junction.activate_branch()
-                    self.start()
-                elif {self.entry_ep, self.exit_ep} == {"A", "S"}:
-                    self.stop()
-                    junction.deactivate_branch()
-                    self.start()
+                if isinstance(junction, JunctionTrack):
+                    if {self.entry_ep, self.exit_ep} == {"A", "C"}:
+                        self.stop()
+                        junction.activate_branch()
+                        self.start()
+                    elif {self.entry_ep, self.exit_ep} == {"A", "S"}:
+                        self.stop()
+                        junction.deactivate_branch()
+                        self.start()
+                if isinstance(junction, DoubleCurveJunctionTrack):
+                    if {self.entry_ep, self.exit_ep} == {"A", "L"}:
+                        self.stop()
+                        junction.activate_branch("L")
+                        self.start()
+                    elif {self.entry_ep, self.exit_ep} == {"A", "R"}:
+                        self.stop()
+                        junction.activate_branch("R")
+                        self.start()
 
     def stop_at_station(self):
         """
