@@ -35,6 +35,10 @@ class JunctionTrack(BaseTrack):
         self.curve_end_row = curve_end_row
         self.curve_end_col = curve_end_col
         self.branch_activated = branch_activated
+        self.is_switching = False
+        self.switching_until = 0
+        self.pending_branch = None
+        self.switch_delay = 2000
 
         # Pixel coordinates of cell centers
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
@@ -65,15 +69,41 @@ class JunctionTrack(BaseTrack):
 
     #region --- Control / State Methods ---------------------------------------------
         
-    def activate_branch(self):
-        """Activate the diverging (curve) branch. 'A' connects to 'C'."""
-        pygame.time.delay(3000)
-        self.branch_activated = True
+    def request_branch(self, target_branch):
+        """
+        Begin switching process to target branch (non-blocking).
+        target_branch: bool (True for curve, False for straight)
+        """
+        if self.is_switching or self.branch_activated == target_branch:
+            return
+        self.is_switching = True
+        self.switching_until = pygame.time.get_ticks() + self.switch_delay
+        self.pending_branch = target_branch
 
-    def deactivate_branch(self):
-        """Deactivate the diverging branch (activate straight). 'A' connects to 'S'."""
-        pygame.time.delay(3000)
-        self.branch_activated = False
+    def finish_switch(self):
+        """Complete the branch switch after the time finishes."""
+        if self.pending_branch is not None:
+            self.branch_activated = self.pending_branch
+            self.pending_branch = None
+
+    def update(self):
+        if self.is_switching and pygame.time.get_ticks() >= self.switching_until:
+            self.is_switching = False
+            self.finish_switch()
+
+    def can_proceed(self, entry_ep, exit_ep):
+        """
+        Determine if a train can traverse the junction, entering entry_ep and exiting
+        at exit_ep
+        """
+        if self.is_switching:
+            return False
+        if self.is_branch_set_for(entry_ep, exit_ep):
+            return True
+        target_branch = True if {entry_ep, exit_ep} == {"A", "C"} else False
+        self.request_branch(target_branch)
+        return False
+
 
     def is_branch_set_for(self, entry_ep, exit_ep):
         """

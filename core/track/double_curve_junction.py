@@ -24,8 +24,7 @@ class DoubleCurveJunctionTrack(BaseTrack):
             right_curve_end_row, right_curve_end_col, 
             left_curve_end_row, left_curve_end_col, 
             track_id, track_type,
-            left_branch_activated = True,
-            right_branch_activated = False
+            active_branch = "L"
         ):
         super().__init__(grid, track_id, track_type)
         self.start_row = start_row
@@ -38,8 +37,13 @@ class DoubleCurveJunctionTrack(BaseTrack):
         self.left_curve_control_col = left_curve_control_col
         self.left_curve_end_row = left_curve_end_row
         self.left_curve_end_col = left_curve_end_col
-        self.left_branch_activated = left_branch_activated
-        self.right_branch_activated = right_branch_activated
+        
+        self.active_branch = active_branch
+
+        self.is_switching = False
+        self.switching_until = 0
+        self.pending_branch = None
+        self.switch_delay = 2000  # ms (adjust if needed)
 
         # Pixel coordinates of cell centers
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
@@ -70,117 +74,58 @@ class DoubleCurveJunctionTrack(BaseTrack):
 
     #region --- Control / State Methods ---------------------------------------------
         
-    def activate_branch(self, branch):
-        """Activate the input branch and deactivate the other"""
-        pygame.time.delay(3000)
-        if branch == "L":
-            if not self.left_branch_activated:
-                self.left_branch_activated = True
-                self.right_branch_activated = False
-        elif branch == "R":
-            if not self.right_branch_activated:
-                self.left_branch_activated = False
-                self.right_branch_activated = True
+
+    def request_branch(self, branch):
+        """
+        Start switching process to a branch ('L' or 'R').
+        Non-blocking: switch completes after self.switch_delay ms.
+        """
+        if self.is_switching or self.active_branch == branch:
+            return
+        self.is_switching = True
+        self.switching_until = pygame.time.get_ticks() + self.switch_delay
+        self.pending_branch = branch
+
+    def finish_switch(self):
+        """Complete the switch to the pending branch."""
+        if self.pending_branch in ("L", "R"):
+            self.active_branch = self.pending_branch
+            self.pending_branch = None
+
+    def update(self):
+        if self.is_switching and pygame.time.get_ticks() >= self.switching_until:
+            self.is_switching = False
+            self.finish_switch()
+
+    def can_proceed(self, entry_ep, exit_ep):
+        """
+        Should the train proceed (through this branch)?
+        Returns True if active branch matches desired; triggers switch if needed.
+        """
+        if self.is_switching:
+            return False
+        needed_branch = None
+        if {entry_ep, exit_ep} == {"A", "L"}:
+            needed_branch = "L"
+        elif {entry_ep, exit_ep} == {"A", "R"}:
+            needed_branch = "R"
+        if needed_branch is None:
+            # Allow if not a valid branch (shouldn't happen in normal routing)
+            return True
+        if self.active_branch == needed_branch:
+            return True
+        self.request_branch(needed_branch)
+        return False
 
     def is_branch_set_for(self, entry_ep, exit_ep):
-        """
-        Check if the current branch activation matches the desired route.
-        """
+        """Compatibility with train API (legacy, not really used)."""
         if {entry_ep, exit_ep} == {"A", "L"}:
-            return self.left_branch_activated
+            return self.active_branch == "L"
         if {entry_ep, exit_ep} == {"A", "R"}:
-            return self.right_branch_activated
-    
-    #endregion
+            return self.active_branch == "R"
+        return True
 
-    #region --- Geometry & Movement Methods -----------------------------------------
-        
-    def get_angle(self, entry_ep, exit_ep):
-        """Returns the angle of travel for a movement from entry_ep to exit_ep."""
-        if {entry_ep, exit_ep} == {"A", "R"} or {entry_ep, exit_ep} == {"A", "L"}:
-            # For curve, angle at t=0 if from A, at t=1 if from R or L
-            t = 0.0 if entry_ep == "A" else 1.0
-            if {entry_ep, exit_ep} == {"A", "R"}:
-                dx, dy = bezier_derivative(
-                    t,
-                    (self.xA, self.yA),
-                    (self.xRCtrl, self.yRCtrl),
-                    (self.xR, self.yR)
-                )
-            else:
-                dx, dy = bezier_derivative(
-                    t,
-                    (self.xA, self.yA),
-                    (self.xLCtrl, self.yLCtrl),
-                    (self.xL, self.yL)
-                )
-            if entry_ep != "A":
-                dx, dy = -dx, -dy
-            return math.degrees(math.atan2(dy, dx))
-        else:
-            # Not a direct segment: return angle towards A
-            x_from, y_from = self.get_endpoint_coords(entry_ep)
-            x_to, y_to = self.get_endpoint_coords(exit_ep)
-            return math.degrees(math.atan2(y_to - y_from, x_to - x_from))
-        
-    def get_point_and_angle(self, t, branch, direction):
-        """Returns a point and angle on the curve at parameter t (0 ≤ t ≤ 1)."""
-        if direction == "R_to_A" or direction == "L_to_A":
-            t = 1 - t
-        point = quadratic_bezier(t, *self.curve_points(branch))
-        dx, dy = bezier_derivative(t, *self.curve_points(branch))
-        if direction == "R_to_A" or direction == "L_to_A":
-            dx, dy = -dx, -dy
-        angle = math.degrees(math.atan2(dy, dx))
-        return point, angle
-    
-    def move_along_segment(self, train, speed, entry_ep, exit_ep):
-        """
-        Moves the train along the segment between the given endpoints.
-        (Consistent API with StraightTrack/CurvedTrack)
-        """
-        if {entry_ep, exit_ep} == {"A", "R"}:
-            # Curve movement
-            if entry_ep == "A":
-                train.s_on_curve = min(train.s_on_curve + speed, self.right_curve_length)
-                t = self.arc_length_to_t(train.s_on_curve, direction="A_to_R")
-                (train.x, train.y), train.angle = self.get_point_and_angle(t, "R", direction="A_to_R")
-                if train.s_on_curve >= self.right_curve_length:
-                    train.row, train.col = self.right_curve_end_row, self.right_curve_end_col
-            else:
-                train.s_on_curve = max(train.s_on_curve - speed, 0)
-                t = self.arc_length_to_t(train.s_on_curve, direction="R_to_A")
-                (train.x, train.y), train.angle = self.get_point_and_angle(t, "R", direction="R_to_A")
-                if train.s_on_curve <= 0:
-                    train.row, train.col = self.start_row, self.start_col
-        elif {entry_ep, exit_ep} == {"A", "L"}:
-            # Curve movement
-            if entry_ep == "A":
-                train.s_on_curve = min(train.s_on_curve + speed, self.left_curve_length)
-                t = self.arc_length_to_t(train.s_on_curve, direction="A_to_L")
-                (train.x, train.y), train.angle = self.get_point_and_angle(t, "L", direction="A_to_L")
-                if train.s_on_curve >= self.left_curve_length:
-                    train.row, train.col = self.left_curve_end_row, self.left_curve_end_col
-            else:
-                train.s_on_curve = max(train.s_on_curve - speed, 0)
-                t = self.arc_length_to_t(train.s_on_curve, direction="L_to_A")
-                (train.x, train.y), train.angle = self.get_point_and_angle(t, "L", direction="L_to_A")
-                if train.s_on_curve <= 0:
-                    train.row, train.col = self.start_row, self.start_col
-
-    def has_reached_endpoint(self, train, exit_ep):
-        """
-        Returns True if the train has arrived at the requested exit endpoint on the junction.
-        Handles both straight and curve branches.
-        """
-        if train.entry_ep == "A":
-            return train.s_on_curve >= self.left_curve_length
-        else:
-            return train.s_on_curve <= 0
-
-    #endregion
-
-    #region --- Curve Length/Arc Methods --------------------------------------------
+    # -------------- Geometry & Movement ---------------
 
     def curve_points(self, branch):
         if branch == "L":
@@ -190,90 +135,149 @@ class DoubleCurveJunctionTrack(BaseTrack):
         else:
             raise ValueError("branch must be 'L' or 'R'")
 
+    def get_angle(self, entry_ep, exit_ep):
+        if {entry_ep, exit_ep} == {"A", "L"}:
+            t = 0.0 if entry_ep == "A" else 1.0
+            dx, dy = bezier_derivative(t, *self.curve_points("L"))
+            if entry_ep != "A":
+                dx, dy = -dx, -dy
+            return math.degrees(math.atan2(dy, dx))
+        if {entry_ep, exit_ep} == {"A", "R"}:
+            t = 0.0 if entry_ep == "A" else 1.0
+            dx, dy = bezier_derivative(t, *self.curve_points("R"))
+            if entry_ep != "A":
+                dx, dy = -dx, -dy
+            return math.degrees(math.atan2(dy, dx))
+        # Fallback for odd routing
+        x_from, y_from = self.get_endpoint_coords(entry_ep)
+        x_to, y_to = self.get_endpoint_coords(exit_ep)
+        return math.degrees(math.atan2(y_to - y_from, x_to - x_from))
+
+    def get_point_and_angle(self, t, branch, direction):
+        if direction in ("L_to_A", "R_to_A"):
+            t = 1 - t
+        point = quadratic_bezier(t, *self.curve_points(branch))
+        dx, dy = bezier_derivative(t, *self.curve_points(branch))
+        if direction in ("L_to_A", "R_to_A"):
+            dx, dy = -dx, -dy
+        angle = math.degrees(math.atan2(dy, dx))
+        return point, angle
+
+    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+        # Only allow movement if active branch matches desired
+        if {entry_ep, exit_ep} == {"A", "R"}:
+            branch = "R"
+            curve_length = self.right_curve_length
+            direction = "A_to_R" if entry_ep == "A" else "R_to_A"
+        elif {entry_ep, exit_ep} == {"A", "L"}:
+            branch = "L"
+            curve_length = self.left_curve_length
+            direction = "A_to_L" if entry_ep == "A" else "L_to_A"
+        else:
+            # Not a direct branch, just jump
+            target_x, target_y = self.get_endpoint_coords(exit_ep)
+            train.x, train.y = target_x, target_y
+            train.row, train.col = self.get_endpoint_grid(exit_ep)
+            return
+
+        if entry_ep == "A":
+            train.s_on_curve = min(train.s_on_curve + speed, curve_length)
+        else:
+            train.s_on_curve = max(train.s_on_curve - speed, 0)
+        t = self.arc_length_to_t(train.s_on_curve, direction=direction)
+        (train.x, train.y), train.angle = self.get_point_and_angle(t, branch, direction)
+        # Update grid position if reached end
+        if entry_ep == "A" and train.s_on_curve >= curve_length:
+            if branch == "L":
+                train.row, train.col = self.left_curve_end_row, self.left_curve_end_col
+            else:
+                train.row, train.col = self.right_curve_end_row, self.right_curve_end_col
+        elif entry_ep != "A" and train.s_on_curve <= 0:
+            train.row, train.col = self.start_row, self.start_col
+
+    def has_reached_endpoint(self, train, exit_ep):
+        # Checks for completion of branch traversal
+        if {train.entry_ep, exit_ep} == {"A", "L"}:
+            if train.entry_ep == "A":
+                return train.s_on_curve >= self.left_curve_length
+            else:
+                return train.s_on_curve <= 0
+        if {train.entry_ep, exit_ep} == {"A", "R"}:
+            if train.entry_ep == "A":
+                return train.s_on_curve >= self.right_curve_length
+            else:
+                return train.s_on_curve <= 0
+        # fallback for non-branch movement
+        tx, ty = self.get_endpoint_coords(exit_ep)
+        return abs(train.x - tx) < 1 and abs(train.y - ty) < 1
+
+    # ------- Curve Length, Arc, and Rendering -------
+
     def bezier_speed(self, t, branch):
-        """Returns the speed along the Bezier curve at parameter t."""
         p0, p1, p2 = self.curve_points(branch)
         return bezier_speed(t, p0, p1, p2)
 
     def total_arc_length(self, branch):
-        # Accurate curve length via Simpson's rule
         p0, p1, p2 = self.curve_points(branch)
         f = lambda t: bezier_speed(t, p0, p1, p2)
         return simpson_integral(f, 0, 1, n=64)
-    
+
     def arc_length_up_to_t(self, t, branch):
-        # Returns arc length from t=0 to t (again via Simpson)
         p0, p1, p2 = self.curve_points(branch)
         f = lambda u: bezier_speed(u, p0, p1, p2)
         return simpson_integral(f, 0, t, n=32)
-    
+
     def arc_length_to_t(self, s, direction, tol=1e-5, max_iter=20):
-        """Given arc length s, solve for t along the curve (0 to 1 for A->L/R, 1 to 0 for L/R->A)."""
-        if direction == "A_to_L" or direction == "A_to_R":
-            if s <= 0:
-                return 0.0
-            if direction == "A_to_L":
-                if s >= self.left_curve_length:
-                    return 1.0
-                t = s / self.left_curve_length  # Initial guess
-                for _ in range(max_iter):
-                    L = self.arc_length_up_to_t(t, "L")
-                    speed = self.bezier_speed(t, "L")
-                    if speed == 0:
-                        break
-                    t_new = t - (L - s) / speed
-                    if abs(t_new - t) < tol:
-                        return min(max(t_new, 0), 1)
-                    t = min(max(t_new, 0), 1)
-            if direction == "A_to_R":
-                if s >= self.right_curve_length:
-                    return 1.0
-                t = s / self.right_curve_length  # Initial guess
-                for _ in range(max_iter):
-                    L = self.arc_length_up_to_t(t, "R")
-                    speed = self.bezier_speed(t, "R")
-                    if speed == 0:
-                        break
-                    t_new = t - (L - s) / speed
-                    if abs(t_new - t) < tol:
-                        return min(max(t_new, 0), 1)
-                    t = min(max(t_new, 0), 1)
-            return t
-        elif direction == "L_to_A" or direction == "R_to_A":
-            if s <= 0:
-                return 1.0
-            if direction == "L_to_A":
-                if s >= self.left_curve_length:
-                    return 0.0
-                t = 1.0 - (s / self.left_curve_length)  # Initial guess
-                for _ in range(max_iter):
-                    L = self.arc_length_up_to_t(t, "L")
-                    speed = self.bezier_speed(t, "L")
-                    if speed == 0:
-                        break
-                    t_new = t - (self.left_curve_length - L - s) / (-speed)
-                    if abs(t_new - t) < tol:
-                        return min(max(t_new, 0), 1)
-                    t = min(max(t_new, 0), 1)
-            if direction == "R_to_A":
-                if s >= self.right_curve_length:
-                    return 0.0
-                t = 1.0 - (s / self.right_curve_length)  # Initial guess
-                for _ in range(max_iter):
-                    L = self.arc_length_up_to_t(t, "R")
-                    speed = self.bezier_speed(t, "R")
-                    if speed == 0:
-                        break
-                    t_new = t - (self.right_curve_length - L - s) / (-speed)
-                    if abs(t_new - t) < tol:
-                        return min(max(t_new, 0), 1)
-                    t = min(max(t_new, 0), 1)
-            return t
+        if direction == "A_to_L":
+            curve_length = self.left_curve_length
+            branch = "L"
+        elif direction == "A_to_R":
+            curve_length = self.right_curve_length
+            branch = "R"
+        elif direction == "L_to_A":
+            curve_length = self.left_curve_length
+            branch = "L"
+        elif direction == "R_to_A":
+            curve_length = self.right_curve_length
+            branch = "R"
         else:
             raise ValueError("direction must be 'A_to_L/R' or 'L/R_to_A'.")
 
+        if direction.startswith("A_to"):
+            if s <= 0:
+                return 0.0
+            if s >= curve_length:
+                return 1.0
+            t = s / curve_length  # Initial guess
+            for _ in range(max_iter):
+                L = self.arc_length_up_to_t(t, branch)
+                speed = self.bezier_speed(t, branch)
+                if speed == 0:
+                    break
+                t_new = t - (L - s) / speed
+                if abs(t_new - t) < tol:
+                    return min(max(t_new, 0), 1)
+                t = min(max(t_new, 0), 1)
+            return t
+        else:
+            # direction ends with _to_A
+            if s <= 0:
+                return 1.0
+            if s >= curve_length:
+                return 0.0
+            t = 1.0 - (s / curve_length)
+            for _ in range(max_iter):
+                L = self.arc_length_up_to_t(t, branch)
+                speed = self.bezier_speed(t, branch)
+                if speed == 0:
+                    break
+                t_new = t - (curve_length - L - s) / (-speed)
+                if abs(t_new - t) < tol:
+                    return min(max(t_new, 0), 1)
+                t = min(max(t_new, 0), 1)
+            return t
+
     def build_even_length_table(self, direction, n_samples=150):
-        """Precompute a list of t values corresponding to evenly-spaced distances along the curve."""
         if direction == "A_to_L" or direction == "L_to_A":
             ts = []
             L = self.left_curve_length
@@ -290,15 +294,8 @@ class DoubleCurveJunctionTrack(BaseTrack):
                 t = self.arc_length_to_t(s, direction)
                 ts.append(t)
             return ts
-        else:
-            raise ValueError("direction must be 'A_to_L/R' or 'L/R_to_A'.")
-
-    #endregion
-    
-    #region --- Rendering Methods ---------------------------------------------------
 
     def draw_track(self, surface, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
-        """Draws the curve and straight, highlighting the active branch."""
         left_curve_points = [quadratic_bezier(
             t/(n_curve_points-1),
             (self.xA, self.yA), (self.xLCtrl, self.yLCtrl), (self.xL, self.yL)
@@ -307,45 +304,34 @@ class DoubleCurveJunctionTrack(BaseTrack):
             t/(n_curve_points-1),
             (self.xA, self.yA), (self.xRCtrl, self.yRCtrl), (self.xR, self.yR)
         ) for t in range(n_curve_points)]
-        if self.left_branch_activated and not self.right_branch_activated:
+        if self.active_branch == "L":
             pygame.draw.lines(surface, activated_color, False, left_curve_points, 5)
             pygame.draw.lines(surface, non_activated_color, False, right_curve_points, 5)
-        if not self.left_branch_activated and self.right_branch_activated:
+        else:
             pygame.draw.lines(surface, non_activated_color, False, left_curve_points, 5)
             pygame.draw.lines(surface, activated_color, False, right_curve_points, 5)
-        else:
-            ValueError("adsjkads")
-
-    #endregion
 
     def get_length(self, entry_ep, exit_ep):
-        """
-        Return total arc length of the Bezier curve of the chosen branch.
-
-        Arguments:
-            entry_ep (str): Start endpoint label.
-            exit_ep (str): End endpoint label.
-        Returns:
-            float: Arc length in pixels.
-        """
-        # For a quadratic curve, length is the same in either direction.
         if {entry_ep, exit_ep} == {"A", "L"}:
             return self.left_curve_length
-        return self.right_curve_length
+        elif {entry_ep, exit_ep} == {"A", "R"}:
+            return self.right_curve_length
+        return 0
 
     def get_position_at_distance(self, entry_ep, exit_ep, s):
         if {entry_ep, exit_ep} == {"A", "L"} or {entry_ep, exit_ep} == {"A", "R"}:
             length = self.get_length(entry_ep, exit_ep)
             if {entry_ep, exit_ep} == {"A", "L"}:
                 direction = "A_to_L" if entry_ep == "A" and exit_ep == "L" else "L_to_A"
-            else: 
+                branch = "L"
+            else:
                 direction = "A_to_R" if entry_ep == "A" and exit_ep == "R" else "R_to_A"
+                branch = "R"
             s = max(0, min(s, length))
             t = self.arc_length_to_t(s, direction=direction)
-            (x, y), angle = self.get_point_and_angle(t, direction=direction)
+            (x, y), angle = self.get_point_and_angle(t, branch, direction)
             return (x, y, angle)
         else:
-            # Not a direct connection
             x, y = self.get_endpoint_coords(entry_ep)
             angle = self.get_angle(entry_ep, exit_ep)
             return (x, y, angle)

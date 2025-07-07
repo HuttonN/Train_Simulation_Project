@@ -5,7 +5,6 @@ from core.track.junction import JunctionTrack
 from core.track.station import StationTrack
 from core.track.double_curve_junction import DoubleCurveJunctionTrack
 from core.route import Route
-
 from core.trains.carriage import Carriage
 
 class Train(pygame.sprite.Sprite):
@@ -16,8 +15,6 @@ class Train(pygame.sprite.Sprite):
 
     MAX_CARRIAGES = 5
 
-    #region --- Constructor ---------------------------------------------------------
-
     def __init__(self, row, col, grid, carriages, track_objects, colour="red", player_controlled=False):
         super().__init__()
         self.row = row
@@ -27,7 +24,7 @@ class Train(pygame.sprite.Sprite):
         self.colour = colour
         self.track_objects = track_objects
         self.player_controlled = player_controlled
-        self.position_history =[]
+        self.position_history = []
 
         self.route = None
         self.current_track = None
@@ -39,7 +36,12 @@ class Train(pygame.sprite.Sprite):
         self.s_on_curve = 0      # For curves
         self.curve_speed = 3
         self.reverse = False     # Whether traversing in reverse direction
-        self.stopped = False
+
+        self.stopped = False          # Used for station (timed) stops
+        self.stop_start_time = 0
+        self.stop_duration = 0
+
+        self.waiting_for_junction = False  # Used for event-driven junction wait
 
         # Enforce max carriages
         if len(carriages) > self.MAX_CARRIAGES:
@@ -59,37 +61,38 @@ class Train(pygame.sprite.Sprite):
             f"assets/images/train_{self.colour}.png"
         ).convert_alpha()
 
-    #endregion
-
-    #region --- Control/Routing Methods ---------------------------------------------
+    #------------------ Route and Movement -----------------------
 
     def set_route(self, route):
-        """
-        Assigns a new route to the train and resets its route progress.
-
-        Arguments:
-            route: The sequence of track segments the train should follow.
-        """
+        """Assign a new route and reset route progress."""
         self.route = route
         step = self.route.get_current_step()
         if step:
             self.enter_segment(step["track_obj"], step["entry"], step["exit"])
 
     def travel_route(self):
-        if self.stopped or self.route is None or self.route.is_finished():
+        """Handle movement along the route, pausing for junctions or stations if needed."""
+        if self.stopped or self.waiting_for_junction or self.route is None or self.route.is_finished():
             return
+
+        # ---- Non-blocking Junction Wait ----
+        if isinstance(self.current_track, (JunctionTrack, DoubleCurveJunctionTrack)):
+            if not self.current_track.can_proceed(self.entry_ep, self.exit_ep):
+                self.waiting_for_junction = True
+                self.speed = 0
+                return  # Wait for junction
+            else:
+                self.waiting_for_junction = False
+                self.speed = 3  # or your default
 
         self.move_along_segment()
 
         if self.at_segment_end():
-            # Stop and board/alight passengers if we're at a station
+            # Timed stop at station
             if isinstance(self.current_track, StationTrack):
-                print(f"Train stopping at station: {self.current_track.name}")
-                self.stop()
+                self.stop(1000)  # Milliseconds at station
                 self.alight_passengers_at_station(self.current_track)
                 self.board_passengers_from_station(self.current_track)
-                self.start()
-            # Now move on to the next segment
             self.route.advance()
             next_step = self.route.get_current_step()
             if next_step:
@@ -97,12 +100,8 @@ class Train(pygame.sprite.Sprite):
             else:
                 self.stop()
 
-
     def enter_segment(self, track_piece, entry_ep, exit_ep):
-        """
-        Called when train enters a new track segment.
-        Initialises direction, curve position, pixel/grid position, and orientation.
-        """
+        """Called when entering a new segment; resets curve/angle state."""
         self.current_track = track_piece
         self.entry_ep = entry_ep
         self.exit_ep = exit_ep
@@ -121,44 +120,10 @@ class Train(pygame.sprite.Sprite):
             self.s_on_curve = 0 if self.entry_ep == "A" else getattr(track_piece, "curve_length", 0)
         self.angle = track_piece.get_angle(entry_ep, exit_ep)
 
-        self.request_junction_branch()
-
-
-    def request_junction_branch(self):
-        """
-        Requests the correct branch configuration on a junction.
-
-        If the train is on a junction and the desired entry/exit path is not active,
-        it stops the train, activates the appropriate branch, and then resumes movement.
-        """
-        if isinstance(self.current_track, JunctionTrack) or isinstance(self.current_track, DoubleCurveJunctionTrack):
-            junction = self.current_track
-            if not junction.is_branch_set_for(self.entry_ep, self.exit_ep):
-                if isinstance(junction, JunctionTrack):
-                    if {self.entry_ep, self.exit_ep} == {"A", "C"}:
-                        self.stop()
-                        junction.activate_branch()
-                        self.start()
-                    elif {self.entry_ep, self.exit_ep} == {"A", "S"}:
-                        self.stop()
-                        junction.deactivate_branch()
-                        self.start()
-                if isinstance(junction, DoubleCurveJunctionTrack):
-                    if {self.entry_ep, self.exit_ep} == {"A", "L"}:
-                        self.stop()
-                        junction.activate_branch("L")
-                        self.start()
-                    elif {self.entry_ep, self.exit_ep} == {"A", "R"}:
-                        self.stop()
-                        junction.activate_branch("R")
-                        self.start()
+    #------------------- Station Stops ---------------------------
 
     def stop_at_station(self):
-        """
-        If train is at a station (with stop?=True at this segment and at segment end), 
-        stop, board all eligible passengers, then resume.
-        """
-        # Check: Are we at a station, with stop? True, and at the end of the segment?
+        """Handle stops at station tracks (uses timer)."""
         step = self.route.get_current_step()
         if (
             isinstance(self.current_track, StationTrack)
@@ -167,49 +132,65 @@ class Train(pygame.sprite.Sprite):
             and self.at_segment_end()
         ):
             print(f"Train stopping at station: {self.current_track.name}")
-            self.stop()
-            # Board passengers from station onto this train
+            self.stop(2000)
             self.current_track.board_passengers_onto_train(self)
-            # (Optional: add a delay before starting, for realism. For now, resume instantly:)
-            self.start()
+            self.start()  # Remove if you want to wait at the station for the full duration
 
-    def stop(self):
-        """
-        Halts the train by setting speed to zero and marking it as stopped.
-        """
+    def stop(self, duration=None):
+        """Halts the train for a timed stop (e.g. station)."""
         self.stopped = True
+        self.stop_start_time = pygame.time.get_ticks()
+        self.stop_duration = duration
         self.speed = 0
 
     def start(self):
-        """
-        Resumes the train's movement by restoring its default speed and clearing the stopped flag.
-        """
+        """Resume train movement after timed stop."""
         self.stopped = False
         self.speed = 3
 
-    #endregion
-
-    #region --- Movement Methods ----------------------------------------------------
+    #------------------ Core Movement ---------------------------
 
     def move_along_segment(self):
-        """
-        Move the train along its current track segment (straight, curve, or junction).
-        Uses entry_ep and exit_ep to determine direction.
-        """
         self.current_track.move_along_segment(self, self.speed, self.entry_ep, self.exit_ep)
 
     def at_segment_end(self):
-        """
-        Checks whether the train has reached the end of its current segment.
+        return self.current_track.has_reached_endpoint(self, self.exit_ep)
 
-        Returns:
-            bool: True if the train has arrived at its exit endpoint, False otherwise.
-        """
-        return self.current_track.has_reached_endpoint(self,self.exit_ep)
-    
-    #endregion
+    #------------------ Pygame Update Loop ----------------------
 
-    #region --- Rendering Methods ---------------------------------------------------
+    def update(self, surface):
+        """
+        Called every frame. Handles all pause logic, movement, and drawing.
+        """
+        # Handle station stops (timer)
+        if self.stopped:
+            if self.stop_duration is not None:
+                now = pygame.time.get_ticks()
+                if now - self.stop_start_time >= self.stop_duration:
+                    self.start()
+                else:
+                    self.draw(surface)
+                    return
+
+        # Handle junction waits (event-driven, no timer)
+        if self.waiting_for_junction:
+            # Check if allowed to proceed now
+            if isinstance(self.current_track, (JunctionTrack, DoubleCurveJunctionTrack)) and self.current_track.can_proceed(self.entry_ep, self.exit_ep):
+                self.waiting_for_junction = False
+                self.speed = 3
+            else:
+                self.draw(surface)
+                return
+
+        # Main movement logic
+        self.travel_route()
+        self.stop_at_station()
+        self.record_position_history()
+        self.update_carriages(surface)
+        # self.prune_position_history()
+        self.draw(surface)
+
+    #----------------- Rendering Methods ------------------------
 
     def draw(self, surface):
         """Draws the train, rotated according to its current angle."""
@@ -219,46 +200,11 @@ class Train(pygame.sprite.Sprite):
         self.image_rect = self.rotated_image.get_rect(center=(self.x, self.y))
         surface.blit(self.rotated_image, self.image_rect)
 
-    #endregion
-
-    #region --- Utility Methods -----------------------------------------------------
+    #----------------- Utility & Carriage Methods --------------
 
     def at_cell_center(self):
-        """Returns True if the train is at the center of its current grid cell."""
         expected_x, expected_y = self.grid.grid_to_screen(self.row, self.col)
         return abs(self.x - expected_x) < 1 and abs(self.y - expected_y) < 1
-    
-    #endregion
-
-    def board_passengers_from_station(self, station):
-        # Step 1: Get waiting passengers from station
-        waiting = station.get_waiting_passengers()
-        # Step 2: Find those eligible for this train's future route
-        eligible = [p for p in waiting if self.route.stops_at_station(p.destination_station.track_id)]
-        boarded = []
-        for p in eligible:
-            for carriage in self.carriages:
-                if carriage.has_space():
-                    carriage.assign_seat(p)
-                    p.board(self, carriage)
-                    boarded.append(p)
-                    break
-        # Step 3: Tell the station to remove those who boarded
-        station.remove_passengers(boarded)
-
-    def alight_passengers_at_station(self, station):
-        for carriage in self.carriages:
-            alighting = carriage.unload_passengers_to_station(station.track_id)
-            for passenger in alighting:
-                print(f"Passenger {passenger.id} alighting at station {station.track_id}")
-                passenger.alight(station)
-    
-    def update(self, surface):
-        self.travel_route()
-        self.stop_at_station()
-        self.record_position_history()
-        self.update_carriages(surface)
-        # self.prune_position_history()
 
     def record_position_history(self):
         if not hasattr(self, "position_history"):
@@ -273,20 +219,10 @@ class Train(pygame.sprite.Sprite):
             carriage.draw(surface)
 
     def get_carriage_position(self, carriage_index):
-        """
-        Returns (x, y, angle) for a carriage at a given index behind the train,
-        stepping back through position history, then track network if needed.
-
-        Assumes:
-        - Each track object implements .get_length(entry_ep, exit_ep) and
-        .get_position_at_distance(entry_ep, exit_ep, s)
-        - Each track has a .connections dict for endpoint traversal
-        - self.track_objects is a dict of all track objects by ID
-        """
         CARRIAGE_LENGTH = 53  # px per carriage (update if needed)
         target_distance = (carriage_index + 1) * CARRIAGE_LENGTH
 
-        # --- 1. Try to get position from position history ---
+        # Try to get position from position history
         total_distance = 0
         last_pos = (self.x, self.y)
         for pos in self.position_history:
@@ -296,17 +232,12 @@ class Train(pygame.sprite.Sprite):
                 return pos
             last_pos = pos
 
-        # --- 2. If not enough history, walk back through track network ---
+        # If not enough history, walk back through track network
         distance_left = target_distance - total_distance
         current_track = self.current_track
         entry_ep = self.entry_ep
-        s_on_segment = 0  # Default: right at entry_ep
-
-        # Optionally, if you store s_on_curve or equivalent, you might start at that value.
-        # (But if at the start of simulation, just use 0.)
 
         while distance_left > 0:
-            # Defensive: need connections data
             if not hasattr(current_track, "connections") or entry_ep not in current_track.connections:
                 # Fallback: return oldest available position
                 if self.position_history:
@@ -319,21 +250,18 @@ class Train(pygame.sprite.Sprite):
             prev_entry_ep = conn["endpoint"]
             prev_track = self.track_objects[prev_track_id]
 
-            # Get the length of the previous segment (from prev_entry_ep to entry_ep)
             seg_length = prev_track.get_length(prev_entry_ep, entry_ep)
             if distance_left <= seg_length:
-                s = seg_length - distance_left  # Position along the previous segment
+                s = seg_length - distance_left
                 x, y, angle = prev_track.get_position_at_distance(prev_entry_ep, entry_ep, s)
                 return (x, y, angle)
             else:
-                # Move through the whole segment, step further back
                 distance_left -= seg_length
                 current_track = prev_track
                 entry_ep = prev_entry_ep
 
         # Fallback (should not happen, but for safety)
         return (self.x, self.y, self.angle)
-
 
     def couple_carriage(self, carriage):
         if len(self.carriages) >= self.MAX_CARRIAGES:
@@ -349,5 +277,26 @@ class Train(pygame.sprite.Sprite):
         carriage.angle = pos[2]
 
     def can_couple(self):
-        """Return True if another carriage can be coupled to this train."""
         return len(self.carriages) < self.MAX_CARRIAGES
+
+    #----------------- Passenger Methods -----------------------
+
+    def board_passengers_from_station(self, station):
+        waiting = station.get_waiting_passengers()
+        eligible = [p for p in waiting if self.route.stops_at_station(p.destination_station.track_id)]
+        boarded = []
+        for p in eligible:
+            for carriage in self.carriages:
+                if carriage.has_space():
+                    carriage.assign_seat(p)
+                    p.board(self, carriage)
+                    boarded.append(p)
+                    break
+        station.remove_passengers(boarded)
+
+    def alight_passengers_at_station(self, station):
+        for carriage in self.carriages:
+            alighting = carriage.unload_passengers_to_station(station.track_id)
+            for passenger in alighting:
+                print(f"Passenger {passenger.id} alighting at station {station.track_id}")
+                passenger.alight(station)
