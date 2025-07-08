@@ -19,7 +19,7 @@ class CurvedTrack(BaseTrack):
     
     def __init__(self, grid, start_row, start_col, control_row, control_col, end_row, end_col, track_id, track_type):
         """
-        Initialise a curved track segment.
+        Initialise a curved track piece.
 
         Arguments:
             grid: Grid object for coordinate conversion.
@@ -63,7 +63,7 @@ class CurvedTrack(BaseTrack):
 
     def get_length(self, entry_ep, exit_ep):
         """
-        Return total arc length of this Bezier curve segment.
+        Return total arc length of this Bezier curve piece.
 
         Arguments:
             entry_ep (str): Start endpoint label.
@@ -132,7 +132,7 @@ class CurvedTrack(BaseTrack):
             dx, dy = -dx, -dy
         return math.degrees(math.atan2(dy, dx))
             
-    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+    def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
         """
         Advance the train along the Bezier curve based on current progress and speed.
 

@@ -8,8 +8,8 @@ class StraightTrack(BaseTrack):
     Represents a straight track piece between two grid cell centers.
     
     ENDPOINTS:
-        - "A": One end of the straight segment.
-        - "B": The other end of the straight segment.
+        - "A": One end of the straight track piece.
+        - "B": The other end of the straight track piece.
     """
 
     ENDPOINTS = ["A", "B"]
@@ -18,7 +18,7 @@ class StraightTrack(BaseTrack):
 
     def __init__(self, grid, start_row, start_col, end_row, end_col, track_id, track_type):
         """
-        Initialise a straight track segment.
+        Initialise a straight track piece.
 
         Arguments:
             grid: Grid object for coordinate conversion.
@@ -75,7 +75,7 @@ class StraightTrack(BaseTrack):
         Return interpolated (x, y) position and angle at parameter t (0=start, 1=end).
 
         Arguments:
-            t (float): Fractional position along the segment (0=start, 1=end).
+            t (float): Fractional position along the track piece (0=start, 1=end).
             direction (str): "A_to_B" or "B_to_A". If "B_to_A", t is reversed.
 
         Returns:
@@ -85,9 +85,9 @@ class StraightTrack(BaseTrack):
             t = 1-t
         return self.get_point_at_t("A", "B", t)
         
-    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+    def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
         """
-        Move the train along the segment from entry_ep to exit_ep.
+        Move the train along the track piece from entry_ep to exit_ep.
 
         Arguments:
             train: Train object to move.
@@ -140,12 +140,12 @@ class StraightTrack(BaseTrack):
     
     def get_position_at_distance(self, entry_ep, exit_ep, s):
         """
-        Return (x, y, angle) at distance s along the segment from entry_ep to exit_ep.
+        Return (x, y, angle) at distance s along the track piece from entry_ep to exit_ep.
 
         Arguments:
             entry_ep (str): Start endpoint label.
             exit_ep (str): End endpoint label.
-            s (float): Distance along the segment (pixels).
+            s (float): Distance along the track piece (pixels).
 
         Returns:
             tuple: (x, y, angle) where (x, y) is the position and angle in degrees.
@@ -157,7 +157,7 @@ class StraightTrack(BaseTrack):
     
     def get_point_at_t(self, entry_ep, exit_ep, t):
         """
-        Return (x, y, angle) at normalised parameter t (0=start, 1=end) along the segment.
+        Return (x, y, angle) at normalised parameter t (0=start, 1=end) along the track piece.
 
         Arguments:
             entry_ep (str): Start endpoint label.

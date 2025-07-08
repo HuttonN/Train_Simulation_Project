@@ -1,6 +1,6 @@
 class Route:
     def __init__(self, steps):
-        self.steps = steps          # List of dicts, one per segment
+        self.steps = steps          # List of dicts, one per track piece
         self.current_index = 0
 
     def get_current_step(self):

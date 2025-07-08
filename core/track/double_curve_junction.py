@@ -163,7 +163,7 @@ class DoubleCurveJunctionTrack(BaseTrack):
         angle = math.degrees(math.atan2(dy, dx))
         return point, angle
 
-    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+    def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
         # Only allow movement if active branch matches desired
         if {entry_ep, exit_ep} == {"A", "R"}:
             branch = "R"

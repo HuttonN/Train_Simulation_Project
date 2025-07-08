@@ -156,9 +156,9 @@ class JunctionTrack(BaseTrack):
         angle = math.degrees(math.atan2(dy, dx))
         return point, angle
     
-    def move_along_segment(self, train, speed, entry_ep, exit_ep):
+    def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
         """
-        Moves the train along the segment between the given endpoints.
+        Moves the train along the track piece between the given endpoints.
         (Consistent API with StraightTrack/CurvedTrack)
         """
         if {entry_ep, exit_ep} == {"A", "S"}:

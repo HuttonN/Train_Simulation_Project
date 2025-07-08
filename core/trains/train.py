@@ -9,7 +9,7 @@ from core.trains.carriage import Carriage
 
 class Train(pygame.sprite.Sprite):
     """
-    Represents a train that can traverse any track segment, in any direction.
+    Represents a train that can traverse any track piece, in any direction.
     Uses entry/exit endpoints to abstract direction.
     """
 
@@ -68,7 +68,7 @@ class Train(pygame.sprite.Sprite):
         self.route = route
         step = self.route.get_current_step()
         if step:
-            self.enter_segment(step["track_obj"], step["entry"], step["exit"])
+            self.enter_track_piece(step["track_obj"], step["entry"], step["exit"])
 
     def travel_route(self):
         """Handle movement along the route, pausing for junctions or stations if needed."""
@@ -85,9 +85,9 @@ class Train(pygame.sprite.Sprite):
                 self.waiting_for_junction = False
                 self.speed = 3  # or your default
 
-        self.move_along_segment()
+        self.move_along_track_piece()
 
-        if self.at_segment_end():
+        if self.at_track_piece_end():
             # Timed stop at station
             if isinstance(self.current_track, StationTrack):
                 self.stop(1000)  # Milliseconds at station
@@ -96,12 +96,12 @@ class Train(pygame.sprite.Sprite):
             self.route.advance()
             next_step = self.route.get_current_step()
             if next_step:
-                self.enter_segment(next_step["track_obj"], next_step["entry"], next_step["exit"])
+                self.enter_track_piece(next_step["track_obj"], next_step["entry"], next_step["exit"])
             else:
                 self.stop()
 
-    def enter_segment(self, track_piece, entry_ep, exit_ep):
-        """Called when entering a new segment; resets curve/angle state."""
+    def enter_track_piece(self, track_piece, entry_ep, exit_ep):
+        """Called when entering a new track_piece; resets curve/angle state."""
         self.current_track = track_piece
         self.entry_ep = entry_ep
         self.exit_ep = exit_ep
@@ -129,7 +129,7 @@ class Train(pygame.sprite.Sprite):
             isinstance(self.current_track, StationTrack)
             and step is not None
             and step.get("stop?", False)
-            and self.at_segment_end()
+            and self.at_track_piece_end()
         ):
             print(f"Train stopping at station: {self.current_track.name}")
             self.stop(2000)
@@ -150,10 +150,10 @@ class Train(pygame.sprite.Sprite):
 
     #------------------ Core Movement ---------------------------
 
-    def move_along_segment(self):
-        self.current_track.move_along_segment(self, self.speed, self.entry_ep, self.exit_ep)
+    def move_along_track_piece(self):
+        self.current_track.move_along_track_piece(self, self.speed, self.entry_ep, self.exit_ep)
 
-    def at_segment_end(self):
+    def at_track_piece_end(self):
         return self.current_track.has_reached_endpoint(self, self.exit_ep)
 
     #------------------ Pygame Update Loop ----------------------

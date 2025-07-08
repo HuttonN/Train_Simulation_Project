@@ -1,7 +1,7 @@
 import pygame
 import math
 from core.track.straight import StraightTrack
-from utils.geometry import closest_point_on_segment
+from utils.geometry import closest_point_on_track_piece
 
 class StationTrack(StraightTrack):
     """
@@ -43,12 +43,12 @@ class StationTrack(StraightTrack):
         self.alighting_passengers = []
         self.position = bool(position)  # True=one side, False=other
 
-        segment_length = math.hypot(self.xB - self.xA)
-        if segment_length < self.MIN_PLATFORM_LENGTH:
+        track_piece_length = math.hypot(self.xB - self.xA)
+        if track_piece_length < self.MIN_PLATFORM_LENGTH:
             raise ValueError(
-                f"StationTrack '{self.name}' is too short: {segment_length:.1f}px (minimum {self.MIN_PLATFORM_LENGTH}px needed)."
+                f"StationTrack '{self.name}' is too short: {track_piece_length:.1f}px (minimum {self.MIN_PLATFORM_LENGTH}px needed)."
             )
-        self.PLATFORM_LENGTH = segment_length # ensures it matches the length of the track piece
+        self.PLATFORM_LENGTH = track_piece_length # ensures it matches the length of the track piece
     #endregion
 
     #region --- Methods -------------------------------------------------------------
@@ -238,7 +238,7 @@ class StationTrack(StraightTrack):
         closest_point = None
         min_dist2 = float('inf')
         for (x1, y1), (x2, y2) in edges:
-            px, py = closest_point_on_segment(cx, cy, x1, y1, x2, y2)
+            px, py = closest_point_on_track_piece(cx, cy, x1, y1, x2, y2)
             dist2 = (px - cx) ** 2 + (py - cy) ** 2
             if dist2 < min_dist2:
                 min_dist2 = dist2

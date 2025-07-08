@@ -57,13 +57,13 @@ class BaseTrack(pygame.sprite.Sprite, ABC):
         pass
 
     @abstractmethod
-    def move_along_segment(self, train, speed, entry_ep, exit_ep):
-        """Advance the train along track segment."""
+    def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
+        """Advance the train along track piece."""
         pass
 
     @abstractmethod
     def get_point_and_angle(self, t, direction):
-        """Return a point and angle along a curve or segment (if applicable)."""
+        """Return a point and angle along a curve or piece (if applicable)."""
         pass
 
     def has_reached_endpoint(self, train, exit_ep):
