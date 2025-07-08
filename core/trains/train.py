@@ -15,7 +15,7 @@ class Train(pygame.sprite.Sprite):
 
     MAX_CARRIAGES = 5
 
-    def __init__(self, row, col, grid, carriages, track_objects, colour="red", player_controlled=False):
+    def __init__(self, row, col, grid, carriages, track_objects, colour="red", player_controlled=False, current_segment = None):
         super().__init__()
         self.row = row
         self.col = col
@@ -30,6 +30,7 @@ class Train(pygame.sprite.Sprite):
         self.current_track = None
         self.entry_ep = None
         self.exit_ep = None
+        self.current_segment = current_segment
 
         self.speed = 3
         self.angle = 0
@@ -69,6 +70,9 @@ class Train(pygame.sprite.Sprite):
         step = self.route.get_current_step()
         if step:
             self.enter_track_piece(step["track_obj"], step["entry"], step["exit"])
+            if step["track_obj"].segment:
+                self.current_segment = step["track_obj"].segment
+                self.current_segment.request_entry(self)
 
     def travel_route(self):
         """Handle movement along the route, pausing for junctions or stations if needed."""
