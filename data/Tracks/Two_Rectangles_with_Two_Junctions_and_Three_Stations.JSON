@@ -8,7 +8,8 @@
             "connections": {
                 "start": { "track": "tl_curve", "endpoint": "end" },
                 "end":   { "track": "top_station",     "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "top_station",
@@ -19,7 +20,8 @@
             "connections": {
                 "start": { "track": "top_straight_1", "endpoint": "end" },
                 "end":   { "track": "top_straight_2", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "top_straight_2",
@@ -29,7 +31,8 @@
             "connections": {
                 "start": { "track": "top_station", "endpoint": "end" },
                 "end":   { "track": "tr_curve",     "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "tr_curve",
@@ -40,7 +43,8 @@
             "connections": {
                 "start": { "track": "top_straight_2", "endpoint": "end" },
                 "end":   { "track": "top_right_straight", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "top_right_straight",
@@ -50,7 +54,8 @@
             "connections": {
                 "start": { "track": "tr_curve",   "endpoint": "end" },
                 "end":   { "track": "right_double_curve_junction",   "endpoint": "left_curve_end" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "right_double_curve_junction",
@@ -74,7 +79,8 @@
             "connections": {
                 "start": { "track": "tl_curve", "endpoint": "end" },
                 "end":   { "track": "middle_station",     "endpoint": "start" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "middle_station",
@@ -85,7 +91,8 @@
             "connections": {
                 "start": { "track": "middle_straight_1", "endpoint": "end" },
                 "end":   { "track": "middle_junction", "endpoint": "start" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "middle_junction",
@@ -108,7 +115,8 @@
             "connections": {
                 "start": { "track": "middle_junction", "endpoint": "straight_end" },
                 "end":   { "track": "right_double_curve_junction", "endpoint": "start" }
-            }
+            },
+            "segment": "segment3"
         },
         {
             "id": "bottom_right_straight",
@@ -118,7 +126,8 @@
             "connections": {
                 "start": { "track": "right_double_curve_junction",   "endpoint": "right_curve_end" },
                 "end":   { "track": "br_curve",   "endpoint": "start" }
-            }
+            },
+            "segment": "segment4"
         },
         {
             "id": "br_curve",
@@ -129,7 +138,8 @@
             "connections": {
                 "start": { "track": "bottom_right_straight", "endpoint": "end" },
                 "end":   { "track": "bottom_straight_2", "endpoint": "start" }
-            }
+            },
+            "segment": "segment4"
         },
         {
             "id": "bottom_straight_2",
@@ -139,7 +149,8 @@
             "connections": {
                 "start": { "track": "br_curve", "endpoint": "end" },
                 "end":   { "track": "bottom_junction", "endpoint": "straight_end" }
-            }
+            },
+            "segment": "segment4"
         },
         {
             "id": "bottom_junction",
@@ -163,7 +174,8 @@
             "connections": {
                 "start": { "track": "bottom_junction", "endpoint": "start" },
                 "end":   { "track": "bottom_straight_1", "endpoint": "start" }
-            }
+            },
+            "segment": "segment5"
         },
         {
             "id": "bottom_straight_1",
@@ -173,7 +185,8 @@
             "connections": {
                 "start": { "track": "bottom_station",     "endpoint": "end" },
                 "end":   { "track": "bl_curve", "endpoint": "start" }
-            }
+            },
+            "segment": "segment5"
         },
         {
             "id": "bl_curve",
@@ -184,7 +197,8 @@
             "connections": {
                 "start": { "track": "bottom_straight_1", "endpoint": "end" },
                 "end":   { "track": "bottom_left_straight",    "endpoint": "start" }
-            }
+            },
+            "segment": "segment5"
         },
         {
             "id": "bottom_left_straight",
@@ -193,8 +207,9 @@
             "end": [15, 2],
             "connections": {
                 "start": { "track": "bl_curve", "endpoint": "end" },
-                "end":   { "track": "tl_curve", "endpoint": "start" }
-            }
+                "end":   { "track": "left_double_curve_junction", "endpoint": "left_curve_end" }
+            },
+            "segment": "segment5"
         },
         {
             "id": "left_double_curve_junction",
@@ -218,7 +233,8 @@
             "connections": {
                 "start": { "track": "left_double_curve_junction", "endpoint": "right_curve_end" },
                 "end":   { "track": "tl_curve", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "tl_curve",
@@ -229,7 +245,8 @@
             "connections": {
                 "start": { "track": "bottom_left_straight",   "endpoint": "end" },
                 "end":   { "track": "top_straight_1",  "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "shortcut",
@@ -239,7 +256,8 @@
             "connections": {
                 "start": { "track": "middle_junction",    "endpoint": "curve_end" },
                 "end":   { "track": "bottom_junction", "endpoint": "curve_end" }
-            }
+            },
+            "segment": "segment6"
         }
     ]
 }
