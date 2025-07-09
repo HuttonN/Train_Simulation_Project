@@ -40,6 +40,9 @@ class JunctionTrack(BaseTrack):
         self.pending_branch = None
         self.switch_delay = 2000
 
+        self.occupied_by = None
+
+
         # Pixel coordinates of cell centers
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
         self.xS, self.yS = self.grid.grid_to_screen(straight_end_row, straight_end_col)
@@ -354,3 +357,18 @@ class JunctionTrack(BaseTrack):
             x, y = self.get_endpoint_coords(entry_ep)
             angle = self.get_angle(entry_ep, exit_ep)
             return (x, y, angle)
+
+    def can_reserve_junction(self, train, exit_segment):
+        """
+        Attempt to atomically reserve both this junction and the exit segment.
+        Returns True if reservation successful, False if blocked.
+        """
+        if self.occupied_by is None and exit_segment.occupied_by is None:
+            self.occupied_by = train
+            exit_segment.occupied_by = train
+            return True
+        return False
+    
+    def release_junction(self, train):
+        if self.occupied_by == train:
+            self.occupied_by = None

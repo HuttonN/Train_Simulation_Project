@@ -97,15 +97,47 @@ class Train(pygame.sprite.Sprite):
                 self.stop(1000)  # Milliseconds at station
                 self.alight_passengers_at_station(self.current_track)
                 self.board_passengers_from_station(self.current_track)
-            self.route.advance()
-            next_step = self.route.get_current_step()
-            if next_step:
-                self.enter_track_piece(next_step["track_obj"], next_step["entry"], next_step["exit"])
+            
+            next_index = self.route.current_index + 1
+            if next_index < len(self.route.steps):
+                next_step = self.route.steps[next_index]
+                next_track = next_step["track_obj"]
+
+                # ----- JUNCTION INTERLOCK LOGIC -----
+                # If next track is a junction, attempt to atomically reserve the junction and the segment *after* it
+                if isinstance(next_track, (JunctionTrack, DoubleCurveJunctionTrack)):
+                    exit_index = next_index + 1
+                    if exit_index < len(self.route.steps):
+                        exit_step = self.route.steps[exit_index]
+                        exit_segment = exit_step["track_obj"].segment
+                        if not next_track.can_reserve_junction(self, exit_segment):
+                            print(f"Train {id(self)} blocked: cannot reserve junction {getattr(next_track, 'track_id', '')} and exit segment {getattr(exit_segment, 'name', '')}")
+                            return  # Wait until both are free
+                    else:
+                        # At end of route; just check junction
+                        if next_track.occupied_by is not None and next_track.occupied_by != self:
+                            print(f"Train {id(self)} blocked: junction {getattr(next_track, 'track_id', '')} is occupied")
+                            return
+
+                # --- Attempt normal segment transition if not a junction ---
+                if not self.handle_segment_transition(next_track):
+                    print(f"Train {id(self)} waiting: cannot advance, next segment is occupied.")
+                    return  # Blocked—do NOT advance or move
+
+                # If we are LEAVING a junction, release its lock now
+                if isinstance(self.current_track, (JunctionTrack, DoubleCurveJunctionTrack)):
+                    self.current_track.release_junction(self)
+
+                self.route.advance()
+                print(f"Train {id(self)} advancing to next route step.")
+                self.enter_track_piece(next_track, next_step["entry"], next_step["exit"])
             else:
                 self.stop()
 
+
     def enter_track_piece(self, track_piece, entry_ep, exit_ep):
         """Called when entering a new track_piece; resets curve/angle state."""
+        print(f"Train {id(self)} entering track {track_piece.track_id} (segment: {getattr(track_piece.segment, 'name', None)})")
         self.current_track = track_piece
         self.entry_ep = entry_ep
         self.exit_ep = exit_ep
@@ -304,3 +336,23 @@ class Train(pygame.sprite.Sprite):
             for passenger in alighting:
                 print(f"Passenger {passenger.id} alighting at station {station.track_id}")
                 passenger.alight(station)
+
+    def handle_segment_transition(self, next_track):
+        next_segment = next_track.segment
+        if next_segment != self.current_segment:
+            if next_segment:  # Entering a new (non-junction) segment
+                print(f"Train {id(self)} attempting to enter segment {next_segment.name} from {getattr(self.current_segment, 'name', None)}")
+                if not next_segment.request_entry(self):
+                    print(f"Train {id(self)} BLOCKED from entering segment {next_segment.name} (occupied by {getattr(next_segment.occupied_by, 'colour', None)})")
+                    self.stopped = True
+                    self.speed = 0
+                    return False
+                if self.current_segment:
+                    print(f"Train {id(self)} leaving segment {self.current_segment.name}")
+                    self.current_segment.leave(self)
+                self.current_segment = next_segment
+            elif self.current_segment:  # Leaving a segment for a junction
+                print(f"Train {id(self)} leaving segment {self.current_segment.name} for a junction")
+                self.current_segment.leave(self)
+                self.current_segment = None
+        return True

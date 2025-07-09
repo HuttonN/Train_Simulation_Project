@@ -40,6 +40,8 @@ class DoubleCurveJunctionTrack(BaseTrack):
         
         self.active_branch = active_branch
 
+        self.occupied_by = None
+
         self.is_switching = False
         self.switching_until = 0
         self.pending_branch = None
@@ -335,3 +337,18 @@ class DoubleCurveJunctionTrack(BaseTrack):
             x, y = self.get_endpoint_coords(entry_ep)
             angle = self.get_angle(entry_ep, exit_ep)
             return (x, y, angle)
+        
+    def can_reserve_junction(self, train, exit_segment):
+        """
+        Attempt to atomically reserve both this junction and the exit segment.
+        Returns True if reservation successful, False if blocked.
+        """
+        if self.occupied_by is None and exit_segment.occupied_by is None:
+            self.occupied_by = train
+            exit_segment.occupied_by = train
+            return True
+        return False
+    
+    def release_junction(self, train):
+        if self.occupied_by == train:
+            self.occupied_by = None
