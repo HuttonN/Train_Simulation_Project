@@ -1,3 +1,5 @@
+from ui.sidebar import Sidebar
+
 class SimulationManager:
     """
     Manages simulation state, steps and main components (classes)
@@ -6,6 +8,9 @@ class SimulationManager:
 
     def __init__(self, screen):
         self.screen = screen
+        self.screen_width = screen.get_width()
+        self.screen_height = screen.get_height()
+        self.sidebar = Sidebar(self.screen_width, self.screen_height)
 
     # Core state
         self.tracks = []
@@ -26,3 +31,4 @@ class SimulationManager:
     def draw(self):
         # Just draws blank screen for now
         self.screen.fill((30,30,30))
+        self.sidebar.draw(self.screen)

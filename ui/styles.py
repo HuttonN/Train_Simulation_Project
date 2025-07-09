@@ -9,7 +9,7 @@ TEXT_COLOUR = (240,240,240)
 
 def get_button_font(screen_width):
     font_path = os.path.join("assets", "calibri.ttf")
-    return pygame.font.Font(font_path, int(screen_width * 0.013))
+    return pygame.font.Font(font_path, int(screen_width * 0.010))
 
 # button sizes
 def get_button_size(screen_width, screen_height):
