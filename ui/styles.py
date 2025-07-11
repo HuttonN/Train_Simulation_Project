@@ -4,7 +4,7 @@ import os
 # Colours
 TRACK_COLOUR = (169, 169, 169)
 BUTTON_COLOUR = (60,60,60)
-MENU_COLOUR = (50,50,50)
+MENU_COLOUR = (50,50,50,255)
 TEXT_COLOUR = (240,240,240)
 
 def get_button_font(screen_width):
