@@ -1,5 +1,6 @@
 import pygame
 from ui.sidebar import Sidebar
+from ui.track_selection_menu import draw_track_selection_menu
 
 class SimulationManager:
     """
@@ -14,13 +15,15 @@ class SimulationManager:
         self.sidebar = Sidebar(self.screen_width, self.screen_height)
 
         # Core state
-        self.tracks = []
+        self.track_infos = []
+        self.selected_track = None
+        self.track_buttons = []
+        self.track_selection_button = []
+        self.simulation_running = False
+
         self.trains = []
         self.passengers = []
         self.stations = []
-
-        self.selected_track = None
-        self.simulation_running = False
 
         # Main menu state
         self.menu_state = None
@@ -37,19 +40,32 @@ class SimulationManager:
             self.menu_state = "player"
         elif clicked == "Start Sim":
             self.simulation_running = not self.simulation_running
-            # Optionally close menus when simulation starts/stops
-        #     self.menu_state = None
-        # elif clicked == "Controls":
-        #     # You can toggle controls or make it modal
-        #     if self.menu_state == "controls":
-        #         self.menu_state = None
-        #     else:
-        #         self.menu_state = "controls"
 
         # Close menus when ESC key pressed
         for event in events: 
             if event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 self.menu_state = None
+
+         # --- NEW: Handle clicks on track menu buttons ---
+        if self.menu_state == "track" and hasattr(self, "track_buttons") and self.track_buttons:
+            for event in events:
+                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                    mouse_pos = pygame.mouse.get_pos()
+                    # Track option buttons
+                    for btn, info in self.track_buttons:
+                        if btn.rect.collidepoint(mouse_pos):
+                            self.selected_track = info["filename"]
+                            # Optionally, update visuals or print feedback
+                            print(f"Selected track: {info['display_name']}")
+                            break
+                    # Select button
+                    if self.track_selection_button and self.track_selection_button.rect.collidepoint(mouse_pos):
+                        if self.selected_track:
+                            # Here you trigger your track loading logic!
+                            print(f"Confirmed selection: {self.selected_track}")
+                            # You might want to close the menu after this:
+                            self.menu_state = None
+                            # You would call your track loading logic here!
 
     def update(self):
         # To fill in
@@ -75,11 +91,13 @@ class SimulationManager:
 
     # --- MENU DRAWING METHODS ---
     def draw_track_menu(self):
-        # TODO: Import and call your track_selection_menu logic here
-        # For now, just render a stub panel
-        import pygame
-        pygame.draw.rect(self.screen, (50,50,50), (self.screen_width * 0.12, self.screen_height * 0.02, self.screen_width * 0.15, self.screen_height * 0.9))
-        # You could also call: self.track_selection_menu.draw(self.screen) if you have a class/component
+        self.track_buttons, self.track_selection_button = draw_track_selection_menu(
+        self.screen,
+        self.screen_width,
+        self.screen_height,
+        self.track_infos,
+        self.selected_track
+        )
 
     def draw_spawn_menu(self):
         # TODO: Implement spawn train/station selection menu here

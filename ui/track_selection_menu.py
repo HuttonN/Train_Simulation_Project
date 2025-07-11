@@ -1,7 +1,8 @@
 import pygame
 from ui.styles import MENU_COLOUR, TEXT_COLOUR, get_track_button_size, get_button_font
+from ui.button import Button
 
-def draw_track_selection_menu(surface, screen_width, screen_height, track_infos):
+def draw_track_selection_menu(surface, screen_width, screen_height, track_infos, selected_track=None):
     """
     Draw a skeleton of the track selection menu.
     (Adapted directly from showTrackSelection() in old main.py, see notes inline)
@@ -22,7 +23,8 @@ def draw_track_selection_menu(surface, screen_width, screen_height, track_infos)
     pygame.draw.rect(
         surface,
         MENU_COLOUR,
-        pygame.Rect(menu_x, menu_y, menu_w, menu_h)
+        pygame.Rect(menu_x, menu_y, menu_w, menu_h),
+        border_radius = 14
     )
 
     # Draw placeholder title
@@ -38,6 +40,7 @@ def draw_track_selection_menu(surface, screen_width, screen_height, track_infos)
     changeInY = screen_height * 0.09  # from: changeInY = screenHeight * 0.09
     max_display = 7
     
+    track_buttons = []
     for i, info in enumerate(track_infos[:max_display]):  # Display 5 dummy tracks for layout (later: use real list)
         option_rect = pygame.Rect(
             menu_x + 10,
@@ -45,27 +48,66 @@ def draw_track_selection_menu(surface, screen_width, screen_height, track_infos)
             option_size[0],
             option_size[1]
         )
-        pygame.draw.rect(surface, (80,80,80), option_rect, border_radius=8)
-        
-        try:
-            img = pygame.image.load(info["preview_image"])
-            img = pygame.transform.smoothscale(
-                img, 
-                (int(option_size[1] * 0.8), int(option_size[1] * 0.8))
-            )
-            img_rect = img.get_rect(left=option_rect.left + 6, centery=option_rect.centery)
-            surface.blit(img, img_rect)
-        except Exception:
-            # If the image fails to load
-            pass
 
-        text = font.render(info["display_name"], True, TEXT_COLOUR)
-        text_rect = text.get_rect(
-            left=option_rect.left + int(option_size[1] * 0.8) + 14,
-            centery=option_rect.centery
+        is_selected = (selected_track == info["filename"])
+        button_colour = (80, 120, 200) if is_selected else (80, 80, 80)
+        track_button = Button(
+            (option_rect.left, option_rect.top),
+            (option_rect.width, option_rect.height),
+            info["display_name"],
+            font,
+            button_colour,
+            TEXT_COLOUR
         )
-        surface.blit(text, text_rect)
+        track_button.render(surface)
+        # Optional: highlight if selected
+        if is_selected:
+            pygame.draw.rect(surface, (0,200,255), option_rect, width=4, border_radius=8)
+        track_buttons.append((track_button, info))
         runningY += changeInY
+        # try:
+        #     img = pygame.image.load(info["preview_image"])
+        #     img = pygame.transform.smoothscale(
+        #         img, 
+        #         (int(option_size[1] * 0.8), int(option_size[1] * 0.8))
+        #     )
+        #     img_rect = img.get_rect(left=option_rect.left + 6, centery=option_rect.centery)
+        #     surface.blit(img, img_rect)
+        # except Exception:
+        #     # If the image fails to load
+        #     pass
+
+        # text = font.render(info["display_name"], True, TEXT_COLOUR)
+        # text_rect = text.get_rect(
+        #     left=option_rect.left + int(option_size[1] * 0.8) + 14,
+        #     centery=option_rect.centery
+        # )
+        # surface.blit(text, text_rect)
+        
+    # --- "Select" Button ---
+    select_button_width = menu_w * 0.7
+    select_button_rect = pygame.Rect(
+        menu_x + (menu_w - select_button_width) // 2,
+        menu_y + menu_h - 60,
+        select_button_width,
+        45
+    )
+    select_button = Button(
+        (select_button_rect.left, select_button_rect.top),
+        (select_button_rect.width, select_button_rect.height),
+        "Select",
+        font,
+        (70, 180, 120),
+        TEXT_COLOUR
+    )
+    select_button.render(surface)
+
+    # --- Return buttons for event handling ---
+    return track_buttons, select_button
+
+        # button.render(surface)
+        # track_buttons.append((button, info))
+        # runningY += changeInY
         # Old: see for-loop for f in trackFiles, for-loop for f in range(startScroll, startScroll+7)...
         # Old: trackOptions.append(Button(...)), then trackButton.render(screen)
         # Here, just render dummy rectangles for now.
