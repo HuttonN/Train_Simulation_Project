@@ -1,4 +1,8 @@
 {
+    "complete": true,
+    "display_name": "Track 1",
+    "description": "A sample layout with three junctions, and three stations.",
+    "preview_image": "assets/images/Two_Rectangles_with_Two_Junctions_and_Three_Stations.png",
     "tracks": [
         {
             "id": "top_straight_1",

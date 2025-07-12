@@ -16,4 +16,4 @@ def get_button_size(screen_width, screen_height):
     return (screen_width * 0.08, screen_height * 0.08)
 
 def get_track_button_size(screen_width, screen_height):
-    return (screen_width*0.13, screen_height*0.08)
+    return (screen_width*0.225, screen_height*0.3)

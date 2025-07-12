@@ -1,6 +1,6 @@
 import pygame
 from ui.sidebar import Sidebar
-from ui.track_selection_menu import draw_track_selection_menu
+from ui.track_selection_menu import TrackSelectionMenu
 
 class SimulationManager:
     """
@@ -15,11 +15,12 @@ class SimulationManager:
         self.sidebar = Sidebar(self.screen_width, self.screen_height)
 
         # Core state
-        self.track_infos = []
         self.selected_track = None
         self.track_buttons = []
         self.track_selection_button = []
         self.simulation_running = False
+        self.track_menu = TrackSelectionMenu(self.screen, self.screen_width, self.screen_height)
+        self.track_menu_active = False
 
         self.trains = []
         self.passengers = []
@@ -47,7 +48,7 @@ class SimulationManager:
                 self.menu_state = None
 
          # --- NEW: Handle clicks on track menu buttons ---
-        if self.menu_state == "track" and hasattr(self, "track_buttons") and self.track_buttons:
+        if self.track_menu_active:
             for event in events:
                 if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                     mouse_pos = pygame.mouse.get_pos()
@@ -79,7 +80,7 @@ class SimulationManager:
 
         # Draw the active menu/panel, if any
         if self.menu_state == "track":
-            self.draw_track_menu()
+            self.track_menu.draw()
         elif self.menu_state == "spawn":
             self.draw_spawn_menu()
         elif self.menu_state == "status":
@@ -91,13 +92,7 @@ class SimulationManager:
 
     # --- MENU DRAWING METHODS ---
     def draw_track_menu(self):
-        self.track_buttons, self.track_selection_button = draw_track_selection_menu(
-        self.screen,
-        self.screen_width,
-        self.screen_height,
-        self.track_infos,
-        self.selected_track
-        )
+        pass
 
     def draw_spawn_menu(self):
         # TODO: Implement spawn train/station selection menu here

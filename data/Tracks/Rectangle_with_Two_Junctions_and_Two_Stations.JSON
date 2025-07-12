@@ -1,4 +1,8 @@
 {
+    "complete": true,
+    "display_name": "Track 1",
+    "description": "A sample layout with three junctions, and three stations.",
+    "preview_image": "assets/images/Rectangle_with_Two_Junctions_and_Two_Stations.png",
     "tracks": [
         {
             "id": "top_straight1",
@@ -8,18 +12,20 @@
             "connections": {
                 "start": { "track": "tl_curve", "endpoint": "end" },
                 "end":   { "track": "top_station_1",     "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "top_station_1",
             "type": "station",
             "start": [5, 10],
             "end": [5, 15],
-            "name": "station_1",
+            "name": "top station",
             "connections": {
                 "start": { "track": "top_straight1", "endpoint": "end" },
                 "end":   { "track": "top_junction", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "top_junction",
@@ -42,7 +48,8 @@
             "connections": {
                 "start": { "track": "top_junction", "endpoint": "straight_end" },
                 "end":   { "track": "tr_curve",     "endpoint": "start" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "tr_curve",
@@ -53,7 +60,8 @@
             "connections": {
                 "start": { "track": "top_straight2", "endpoint": "end" },
                 "end":   { "track": "right_straight", "endpoint": "start" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "right_straight",
@@ -63,7 +71,8 @@
             "connections": {
                 "start": { "track": "tr_curve",   "endpoint": "end" },
                 "end":   { "track": "br_curve",   "endpoint": "start" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "br_curve",
@@ -74,7 +83,8 @@
             "connections": {
                 "start": { "track": "right_straight", "endpoint": "end" },
                 "end":   { "track": "bottom_straight2", "endpoint": "start" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "bottom_straight2",
@@ -84,7 +94,8 @@
             "connections": {
                 "start": { "track": "br_curve", "endpoint": "end" },
                 "end":   { "track": "bottom_junction", "endpoint": "straight_end" }
-            }
+            },
+            "segment": "segment2"
         },
         {
             "id": "bottom_junction",
@@ -104,11 +115,12 @@
             "type": "station",
             "start": [15, 15],
             "end": [15, 10],
-            "name": "station_2",
+            "name": "bottom station",
             "connections": {
                 "start": { "track": "bottom_junction", "endpoint": "start" },
                 "end":   { "track": "bottom_straight1", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "bottom_straight1",
@@ -118,7 +130,8 @@
             "connections": {
                 "start": { "track": "bottom_station_1",     "endpoint": "end" },
                 "end":   { "track": "bl_curve", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "bl_curve",
@@ -129,7 +142,8 @@
             "connections": {
                 "start": { "track": "bottom_straight1", "endpoint": "end" },
                 "end":   { "track": "left_straight",    "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "left_straight",
@@ -139,7 +153,8 @@
             "connections": {
                 "start": { "track": "bl_curve", "endpoint": "end" },
                 "end":   { "track": "tl_curve", "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "tl_curve",
@@ -150,7 +165,8 @@
             "connections": {
                 "start": { "track": "left_straight",   "endpoint": "end" },
                 "end":   { "track": "top_straight_1",  "endpoint": "start" }
-            }
+            },
+            "segment": "segment1"
         },
         {
             "id": "shortcut",
@@ -160,7 +176,8 @@
             "connections": {
                 "start": { "track": "top_junction",    "endpoint": "curve_end" },
                 "end":   { "track": "bottom_junction", "endpoint": "curve_end" }
-            }
+            },
+            "segment": "segment3"
         }
     ]
 }
