@@ -427,7 +427,6 @@ class DoubleCurveJunctionTrack(BaseTrack):
         dxAR, dyAR = xR - xA, yR - yA
         dxLA, dyLA = -dxAL, -dyAL
         dxRA, dyRA = -dxAR, -dyAR
-        # dxCstart, dyCstart = math.cos(angle_Cstart), math.sin(angle_Cstart)
         
         # Calculate the required angles
         angle_AL = math.atan2(dyAL, dxAL)
@@ -440,28 +439,18 @@ class DoubleCurveJunctionTrack(BaseTrack):
         perp_dxAstartR, perp_dyAstartR = -dyAstart, dxAstart 
         perp_dxLstart, perp_dyLstart = dyLstart, -dxLstart 
         perp_dxRstart, perp_dyRstart = -dyRstart, dxRstart 
-        perp_dxAL, perp_dyAL = -dyAL, dxAL
-        perp_dxAR, perp_dyAR = dyAL, -dxAL # 180 degrees from perp AL
-        perp_dxLA, perp_dyLA = dyLA, -dxLA
 
         # Calculate vector lengths
         len_perp_AstartL = math.hypot(perp_dxAstartL, perp_dyAstartL)
         len_perp_AstartR = math.hypot(perp_dxAstartR, perp_dyAstartR)
         len_perp_Lstart = math.hypot(perp_dxLstart, perp_dyLstart)
         len_perp_Rstart = math.hypot(perp_dxRstart, perp_dyRstart)
-        len_perp_AL = math.hypot(perp_dxAL, perp_dyAL)
-        len_perp_AR = math.hypot(perp_dxAR, perp_dyAR)
-        len_perp_LA = math.hypot(perp_dxLA, perp_dyLA)
-        # len_perp_Cstart = math.hypot(perp_dxCstart, perp_dyCstart)
 
         # Define unit vectors in same direction
         perp_uxAstartL, perp_uyAstartL = perp_dxAstartL / len_perp_AstartL, perp_dyAstartL / len_perp_AstartL
         perp_uxAstartR, perp_uyAstartR = perp_dxAstartR / len_perp_AstartR, perp_dyAstartR / len_perp_AstartR
         perp_uxLstart, perp_uyLstart = perp_dxLstart / len_perp_Lstart, perp_dyLstart / len_perp_Lstart
         perp_uxRstart, perp_uyRstart = perp_dxRstart / len_perp_Rstart, perp_dyRstart / len_perp_Rstart
-        perp_uxAL, perp_uyAL = perp_dxAL / len_perp_AL, perp_dyAL / len_perp_AL
-        perp_uxAR, perp_uyAR = perp_dxAR / len_perp_AR, perp_dyAR / len_perp_AR
-        perp_uxLA, perp_uyLA = perp_dxLA / len_perp_LA, perp_dyLA / len_perp_LA
 
         # Determine centers of signal centers
         center_AL = (
