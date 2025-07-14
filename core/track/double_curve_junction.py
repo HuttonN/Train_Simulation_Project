@@ -5,6 +5,7 @@ from core.track.base import BaseTrack
 
 from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
+from utils.signals import draw_signal_indicator
 
 class DoubleCurveJunctionTrack(BaseTrack):
     """
@@ -45,7 +46,7 @@ class DoubleCurveJunctionTrack(BaseTrack):
         self.is_switching = False
         self.switching_until = 0
         self.pending_branch = None
-        self.switch_delay = 2000  # ms (adjust if needed)
+        self.switch_delay = 2000  # 2 seconds
 
         # Pixel coordinates of cell centers
         self.xA, self.yA = self.grid.grid_to_screen(start_row, start_col)
@@ -72,10 +73,10 @@ class DoubleCurveJunctionTrack(BaseTrack):
         self.left_even_t_table = self.build_even_length_table("A_to_L", n_samples=150)
         self.right_even_t_table = self.build_even_length_table("A_to_R", n_samples=150)
 
+
     #endregion
 
     #region --- Control / State Methods ---------------------------------------------
-        
 
     def request_branch(self, branch):
         """
@@ -297,7 +298,7 @@ class DoubleCurveJunctionTrack(BaseTrack):
                 ts.append(t)
             return ts
 
-    def draw_track(self, surface, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
+    def draw_track(self, surface, track_objects, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
         left_curve_points = [quadratic_bezier(
             t/(n_curve_points-1),
             (self.xA, self.yA), (self.xLCtrl, self.yLCtrl), (self.xL, self.yL)
@@ -309,9 +310,11 @@ class DoubleCurveJunctionTrack(BaseTrack):
         if self.active_branch == "L":
             pygame.draw.lines(surface, activated_color, False, left_curve_points, 5)
             pygame.draw.lines(surface, non_activated_color, False, right_curve_points, 5)
+            self.draw_signals(surface, track_objects)
         else:
             pygame.draw.lines(surface, non_activated_color, False, left_curve_points, 5)
             pygame.draw.lines(surface, activated_color, False, right_curve_points, 5)
+            self.draw_signals(surface, track_objects)
 
     def get_length(self, entry_ep, exit_ep):
         if {entry_ep, exit_ep} == {"A", "L"}:
@@ -350,5 +353,143 @@ class DoubleCurveJunctionTrack(BaseTrack):
         return False
     
     def release_junction(self, train):
+        """
+        Release the junction reservation if occupied by the given train.
+
+        Arguments:
+            train: Train object.
+        """
         if self.occupied_by == train:
             self.occupied_by = None
+
+    def get_segment_for_branch(self, track_objects, endpoint_label):
+        id = self.connections[endpoint_label]["track"]
+        return track_objects[id].segment
+
+    def get_signal_states(self, track_objects):
+        """
+        Returns a dictionary mapping each branch to its signal state (allowed, active, in_progress).
+
+        Returns:
+            dict: For example, {'straight': {...}, 'curve': {...}}
+        """
+        signal_states = {
+            "signal_AL": {
+                "allowed": self.active_branch == "L" and not self.get_segment_for_branch(track_objects, "left_curve_end").occupied_by and not self.is_switching,
+                "active": self.active_branch == "L",
+                "in_progress": self.is_switching
+            },
+            "signal_AR": {
+                "allowed": self.active_branch == "R" and not self.get_segment_for_branch(track_objects, "right_curve_end").occupied_by and not self.is_switching,
+                "active": self.active_branch == "R",
+                "in_progress": self.is_switching
+            },
+            "signal_LA": {
+                "allowed": self.active_branch == "L" and not self.get_segment_for_branch(track_objects, "start").occupied_by and not self.is_switching,
+                "active": self.active_branch == "L",
+                "in_progress": self.is_switching
+            },
+            "signal_RA": {
+                "allowed": self.active_branch == "R" and not self.get_segment_for_branch(track_objects, "start").occupied_by and not self.is_switching,
+                "active": self.active_branch == "R",
+                "in_progress": self.is_switching
+            }
+        }
+
+        return signal_states
+    
+    def draw_signals(self, surface, track_objects):
+        """
+        Draws all signal indicators for this junction on the given surface.
+
+        Args:
+            surface: Pygame surface to draw on.
+        """
+
+        # Get endpoint coordinates
+        xA, yA = self.endpoint_coords["A"]
+        xL, yL = self.endpoint_coords["L"]
+        xR, yR = self.endpoint_coords["R"]
+
+        # Get angle of direction at entrances (in radians)
+        angle_Astart = math.radians(self.get_point_and_angle(0, "R", direction="A_to_R")[1]) # Don't think branch choice will matter, as straight ahead when t=0
+        angle_Lstart = math.radians(self.get_point_and_angle(0, "L", direction="L_to_A")[1])
+        angle_Rstart = math.radians(self.get_point_and_angle(0, "R", direction="R_to_A")[1])
+        
+        # Set offset
+        signal_offset = 22
+
+        # Set up the required vectors
+        dxAstart, dyAstart = math.cos(angle_Astart), math.sin(angle_Astart)
+        dxLstart, dyLstart = math.cos(angle_Lstart), math.sin(angle_Lstart)
+        dxRstart, dyRstart = math.cos(angle_Rstart), math.sin(angle_Rstart)
+        dxAL, dyAL = xL - xA, yL - yA
+        dxAR, dyAR = xR - xA, yR - yA
+        dxLA, dyLA = -dxAL, -dyAL
+        dxRA, dyRA = -dxAR, -dyAR
+        # dxCstart, dyCstart = math.cos(angle_Cstart), math.sin(angle_Cstart)
+        
+        # Calculate the required angles
+        angle_AL = math.atan2(dyAL, dxAL)
+        angle_AR = math.atan2(dyAR, dxAR)
+        angle_LA = math.atan2(dyLA, dxLA)
+        angle_RA = math.atan2(dyRA, dxRA)
+
+        # Determine perpendicular vectors for signal position
+        perp_dxAstartL, perp_dyAstartL = dyAstart, -dxAstart 
+        perp_dxAstartR, perp_dyAstartR = -dyAstart, dxAstart 
+        perp_dxLstart, perp_dyLstart = dyLstart, -dxLstart 
+        perp_dxRstart, perp_dyRstart = -dyRstart, dxRstart 
+        perp_dxAL, perp_dyAL = -dyAL, dxAL
+        perp_dxAR, perp_dyAR = dyAL, -dxAL # 180 degrees from perp AL
+        perp_dxLA, perp_dyLA = dyLA, -dxLA
+
+        # Calculate vector lengths
+        len_perp_AstartL = math.hypot(perp_dxAstartL, perp_dyAstartL)
+        len_perp_AstartR = math.hypot(perp_dxAstartR, perp_dyAstartR)
+        len_perp_Lstart = math.hypot(perp_dxLstart, perp_dyLstart)
+        len_perp_Rstart = math.hypot(perp_dxRstart, perp_dyRstart)
+        len_perp_AL = math.hypot(perp_dxAL, perp_dyAL)
+        len_perp_AR = math.hypot(perp_dxAR, perp_dyAR)
+        len_perp_LA = math.hypot(perp_dxLA, perp_dyLA)
+        # len_perp_Cstart = math.hypot(perp_dxCstart, perp_dyCstart)
+
+        # Define unit vectors in same direction
+        perp_uxAstartL, perp_uyAstartL = perp_dxAstartL / len_perp_AstartL, perp_dyAstartL / len_perp_AstartL
+        perp_uxAstartR, perp_uyAstartR = perp_dxAstartR / len_perp_AstartR, perp_dyAstartR / len_perp_AstartR
+        perp_uxLstart, perp_uyLstart = perp_dxLstart / len_perp_Lstart, perp_dyLstart / len_perp_Lstart
+        perp_uxRstart, perp_uyRstart = perp_dxRstart / len_perp_Rstart, perp_dyRstart / len_perp_Rstart
+        perp_uxAL, perp_uyAL = perp_dxAL / len_perp_AL, perp_dyAL / len_perp_AL
+        perp_uxAR, perp_uyAR = perp_dxAR / len_perp_AR, perp_dyAR / len_perp_AR
+        perp_uxLA, perp_uyLA = perp_dxLA / len_perp_LA, perp_dyLA / len_perp_LA
+
+        # Determine centers of signal centers
+        center_AL = (
+            int(xA + perp_uxAstartL * signal_offset),
+            int(yA + perp_uyAstartL * signal_offset)
+        )
+        center_AR = (
+            int(xA + perp_uxAstartR * signal_offset),
+            int(yA + perp_uyAstartR * signal_offset)
+        )
+        center_LA = (
+            int(xL + perp_uxLstart * signal_offset),
+            int(yL + perp_uyLstart * signal_offset)
+        )
+        center_RA = (
+            int(xR + perp_uxRstart * signal_offset),
+            int(yR + perp_uyRstart * signal_offset)
+        )
+        # center_RA = (
+        #     int(xR + perp_uxCstart * signal_offset),
+        #     int(yR+ perp_uyCstart * signal_offset)
+        # )
+
+        # Compute signal states
+        states = self.get_signal_states(track_objects)
+
+        # Draw the signals
+        draw_signal_indicator(surface, center_AL, states["signal_AL"])
+        draw_signal_indicator(surface, center_AR, states["signal_AR"])
+        draw_signal_indicator(surface, center_LA, states["signal_LA"])
+        draw_signal_indicator(surface, center_RA, states["signal_RA"])

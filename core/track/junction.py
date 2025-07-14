@@ -4,6 +4,7 @@ import math
 from core.track.base import BaseTrack
 from utils.geometry import quadratic_bezier, bezier_derivative, bezier_speed
 from utils.numerics import simpson_integral
+from utils.signals import draw_signal_indicator
 
 class JunctionTrack(BaseTrack):
     """
@@ -325,6 +326,29 @@ class JunctionTrack(BaseTrack):
             x, y = self.get_endpoint_coords(entry_ep)
             angle = self.get_angle(entry_ep, exit_ep)
             return (x, y, angle)
+        
+    def get_relative_branch_position(self):
+        """
+        Returns 'left' or 'right' for the curve branch relative to straight,
+        from the perspective of a train at endpoint 'A'.
+        Raises ValueError if branches are collinear (invalid geometry).
+        """
+        xA, yA = self.endpoint_coords["A"]
+        xS, yS = self.endpoint_coords["S"]
+        xC, yC = self.endpoint_coords["C"]
+        dxS, dyS = xS - xA, yS - yA
+        dxC, dyC = xC - xA, yC - yA
+        cross = dxS * dyC - dyS * dxC
+        if cross > 0:
+            return "left"
+        elif cross < 0:
+            return "right"
+        else:
+            raise ValueError(
+                f"Junction geometry error: curve and straight branches are collinear at A=({xA},{yA}), "
+                f"S=({xS},{yS}), C=({xC},{yC}) in {self!r}"
+            )
+
 
     #endregion
 
@@ -423,7 +447,7 @@ class JunctionTrack(BaseTrack):
     
     #region --- Rendering Methods ---------------------------------------------------
 
-    def draw_track(self, surface, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
+    def draw_track(self, surface, track_objects, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
         """
         Draw the junction on the given surface, highlighting the active branch.
 
@@ -442,13 +466,15 @@ class JunctionTrack(BaseTrack):
         if self.branch_activated:
             pygame.draw.lines(surface, activated_color, False, curve_points, 5)
             pygame.draw.line(surface, non_activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
+            self.draw_signals(surface, track_objects)
         else:
             pygame.draw.lines(surface, non_activated_color, False, curve_points, 5)
             pygame.draw.line(surface, activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
+            self.draw_signals(surface, track_objects)
 
     #endregion
 
-    #region --- Reservation/Segment Methods ---------------------------------------------------
+    #region --- Reservation/Segment Methods -----------------------------------------
 
     def can_reserve_junction(self, train, exit_segment):
         """
@@ -474,3 +500,132 @@ class JunctionTrack(BaseTrack):
         """
         if self.occupied_by == train:
             self.occupied_by = None
+    #endregion
+
+    def get_segment_for_branch(self, track_objects, endpoint_label):
+        id = self.connections[endpoint_label]["track"]
+        return track_objects[id].segment
+
+    def get_signal_states(self, track_objects):
+        """
+        Returns a dictionary mapping each branch to its signal state (allowed, active, in_progress).
+
+        Returns:
+            dict: For example, {'straight': {...}, 'curve': {...}}
+        """
+        signal_states = {
+            "signal_AS": {
+                "allowed": not self.branch_activated and not self.get_segment_for_branch(track_objects, "straight_end").occupied_by and not self.is_switching,
+                "active": not self.branch_activated,
+                "in_progress": self.is_switching
+            },
+            "signal_AC": {
+                "allowed": self.branch_activated and not self.get_segment_for_branch(track_objects, "curve_end").occupied_by and not self.is_switching,
+                "active": self.branch_activated,
+                "in_progress": self.is_switching
+            },
+            "signal_SA": {
+                "allowed": not self.branch_activated and not self.get_segment_for_branch(track_objects, "start").occupied_by and not self.is_switching,
+                "active": not self.branch_activated,
+                "in_progress": self.is_switching
+            },
+            "signal_CA": {
+                "allowed": self.branch_activated and not self.get_segment_for_branch(track_objects, "start").occupied_by and not self.is_switching,
+                "active": self.branch_activated,
+                "in_progress": self.is_switching
+            }
+        }
+
+        return signal_states
+
+
+    def draw_signals(self, surface, track_objects):
+        """
+        Draws all signal indicators for this junction on the given surface.
+
+        Args:
+            surface: Pygame surface to draw on.
+        """
+
+        # Get endpoint coordinates
+        xA, yA = self.endpoint_coords["A"]
+        xS, yS = self.endpoint_coords["S"]
+        xC, yC = self.endpoint_coords["C"]
+
+        # Get angle of direction at curve entrance (in radians)
+        angle_Cstart = math.radians(self.get_point_and_angle(0, direction="C_to_A")[1])
+
+        # Set offset
+        signal_offset = 22
+
+        # Relative position of the branch to the straight, heading towards the divergence
+        rel = self.get_relative_branch_position()  # returns 'left' or 'right'
+
+        # Set up the required vectors
+        dxAS, dyAS = xS - xA, yS - yA
+        dxAC, dyAC = xC - xA, yC - yA
+        dxSA, dySA = -dxAS, -dyAS
+        dxCA, dyCA = -dxAC, -dyAC
+        dxCstart, dyCstart = math.cos(angle_Cstart), math.sin(angle_Cstart)
+        
+        # Calculate the required angles
+        angle_AS = math.atan2(dyAS, dxAS)
+        angle_AC = math.atan2(dyAC, dxAC)
+        angle_SA = math.atan2(dySA, dxSA)
+        angle_CA = math.atan2(dyCA, dxCA)
+
+        # Determine perpendicular vectors for signal position
+        if rel == "right":
+            # Curve is right, so AS signal should be to the left (anticlockwise)
+            perp_dxAS, perp_dyAS = -dyAS, dxAS
+            perp_dxAC, perp_dyAC = dyAS, -dxAS # 180 degrees from perp AS
+            perp_dxSA, perp_dySA = dySA, -dxSA
+            perp_dxCstart, perp_dyCstart = dyCstart, -dxCstart 
+            
+        else:
+            # Curve is left, so AS signal should be to the right (clockwise)
+            perp_dxAS, perp_dyAS = dyAS, -dxAS
+            perp_dxAC, perp_dyAC = -dyAS, dxAS
+            perp_dxSA, perp_dySA = -dySA, dxSA
+            perp_dxCstart, perp_dyCstart = -dyCstart, dxCstart
+
+        # Calculate vector lengths
+        len_perp_AS = math.hypot(perp_dxAS, perp_dyAS)
+        len_perp_AC = math.hypot(perp_dxAC, perp_dyAC)
+        len_perp_SA = math.hypot(perp_dxSA, perp_dySA)
+        len_perp_Cstart = math.hypot(perp_dxCstart, perp_dyCstart)
+
+        # Define unit vectors in same direction
+        perp_uxAS, perp_uyAS = perp_dxAS / len_perp_AS, perp_dyAS / len_perp_AS
+        perp_uxAC, perp_uyAC = perp_dxAC / len_perp_AC, perp_dyAC / len_perp_AC
+        perp_uxSA, perp_uySA = perp_dxSA / len_perp_SA, perp_dySA / len_perp_SA
+        perp_uxCstart, perp_uyCstart = perp_dxCstart / len_perp_Cstart, perp_dyCstart / len_perp_Cstart
+
+        # Determine centers of signal centers
+        center_AS = (
+            int(xA + perp_uxAS * signal_offset),
+            int(yA + perp_uyAS * signal_offset)
+        )
+        center_AC = (
+            int(xA + perp_uxAC * signal_offset),
+            int(yA + perp_uyAC * signal_offset)
+        )
+        center_SA = (
+            int(xS + perp_uxSA * signal_offset),
+            int(yS + perp_uySA * signal_offset)
+        )
+        center_CA = (
+            int(xC + perp_uxCstart * signal_offset),
+            int(yC+ perp_uyCstart * signal_offset)
+        )
+
+        # Compute signal states
+        states = self.get_signal_states(track_objects)
+
+        # Draw the signals
+        draw_signal_indicator(surface, center_AS, states["signal_AS"])
+        draw_signal_indicator(surface, center_AC, states["signal_AC"])
+        draw_signal_indicator(surface, center_SA, states["signal_SA"])
+        draw_signal_indicator(surface, center_CA, states["signal_CA"])
+
+
