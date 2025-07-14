@@ -13,7 +13,6 @@ def get_all_track_infos(track_dir="data/Tracks"):
             try:
                 with open(path, "r") as f:
                     data = json.load(f)
-                    print(data)
                 if data.get("complete"):
                     display_name = data.get("display_name", fname.rsplit('.',1)[0])
                     preview_img = data.get("preview_image", "assets/images/placeholder.png")
