@@ -7,6 +7,7 @@
     { "track": "br_curve", "entry": "A", "exit": "C" },
     { "track": "bottom_straight_2", "entry": "A", "exit": "B" },
     { "track": "bottom_junction", "entry": "S", "exit": "A" },
+    { "track": "bottom_straight_3", "entry": "A", "exit": "B" },
     { "track": "bottom_station", "entry": "A", "exit": "B", "stop?": false},
     { "track": "bottom_straight_1", "entry": "A", "exit": "B" },
     { "track": "bl_curve", "entry": "A", "exit": "C" },
@@ -14,6 +15,6 @@
     { "track": "left_double_curve_junction", "entry": "L", "exit": "A" },
     { "track": "middle_straight_1", "entry": "A", "exit": "B" },
     { "track": "middle_station", "entry": "A", "exit": "B", "stop?": false},
-    { "track": "middle_junction", "entry": "A", "exit": "S" }
+    { "track": "middle_straight_3", "entry": "A", "exit": "B" }
   ]
 }

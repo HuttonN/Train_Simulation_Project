@@ -10,6 +10,7 @@
     { "track": "right_double_curve_junction", "entry": "L", "exit": "A" },
     { "track": "middle_straight_2", "entry": "B", "exit": "A" },
     { "track": "middle_junction", "entry": "S", "exit": "A" },
+    { "track": "middle_straight_3", "entry": "B", "exit": "A" },
     { "track": "middle_station", "entry": "B", "exit": "A", "stop?": false},
     { "track": "middle_straight_1", "entry": "B", "exit": "A" },
     { "track": "left_double_curve_junction", "entry": "A", "exit": "R" },

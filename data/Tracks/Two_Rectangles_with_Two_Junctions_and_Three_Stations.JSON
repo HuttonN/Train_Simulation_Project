@@ -79,7 +79,7 @@
             "id": "middle_straight_1",
             "type": "straight",
             "start": [12, 5],
-            "end": [12, 10],
+            "end": [12, 8],
             "connections": {
                 "start": { "track": "tl_curve", "endpoint": "end" },
                 "end":   { "track": "middle_station",     "endpoint": "start" }
@@ -89,11 +89,22 @@
         {
             "id": "middle_station",
             "type": "station",
-            "start": [12, 10],
-            "end": [12, 15],
+            "start": [12, 8],
+            "end": [12, 13],
             "name": "station_1",
             "connections": {
                 "start": { "track": "middle_straight_1", "endpoint": "end" },
+                "end":   { "track": "middle_straight_3", "endpoint": "start" }
+            },
+            "segment": "segment2"
+        },
+        {
+            "id": "middle_straight_3",
+            "type": "straight",
+            "start": [12, 13],
+            "end": [12, 15],
+            "connections": {
+                "start": { "track": "middle_station", "endpoint": "end" },
                 "end":   { "track": "middle_junction", "endpoint": "start" }
             },
             "segment": "segment2"
@@ -164,19 +175,30 @@
             "curve_control": [22, 18],
             "curve_end": [20, 18],
             "connections": {
-                "start":        { "track": "bottom_station", "endpoint": "start" },
+                "start":        { "track": "bottom_straight_3", "endpoint": "start" },
                 "straight_end": { "track": "bottom_straight_2", "endpoint": "end" },
                 "curve_end":    { "track": "shortcut",         "endpoint": "end" }
             }
-        },        
+        },  
+        {
+            "id": "bottom_straight_3",
+            "type": "straight",
+            "start": [22, 15],
+            "end": [22, 13],
+            "connections": {
+                "start": { "track": "bottom_junction", "endpoint": "start" },
+                "end":   { "track": "bottom_station", "endpoint": "start" }
+            },
+            "segment": "segment5"
+        },      
         {
             "id": "bottom_station",
             "type": "station",
-            "start": [22, 15],
-            "end": [22, 10],
+            "start": [22, 13],
+            "end": [22, 8],
             "name": "bottom_station",
             "connections": {
-                "start": { "track": "bottom_junction", "endpoint": "start" },
+                "start": { "track": "bottom_straight_3", "endpoint": "start" },
                 "end":   { "track": "bottom_straight_1", "endpoint": "start" }
             },
             "segment": "segment5"
@@ -184,7 +206,7 @@
         {
             "id": "bottom_straight_1",
             "type": "straight",
-            "start": [22, 10],
+            "start": [22, 8],
             "end": [22, 5],
             "connections": {
                 "start": { "track": "bottom_station",     "endpoint": "end" },
