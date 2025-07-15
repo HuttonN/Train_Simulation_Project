@@ -1,6 +1,11 @@
 import pygame
+import os
 from ui.sidebar import Sidebar
 from ui.track_selection_menu import TrackSelectionMenu
+from ui.button import Button
+from controller.track_loader import load_track_layout
+from core.track.double_curve_junction import DoubleCurveJunctionTrack
+from core.track.junction import JunctionTrack
 
 class SimulationManager:
     """
@@ -8,10 +13,11 @@ class SimulationManager:
     Acts as coordinator between the core logic and the UI
     """
 
-    def __init__(self, screen):
+    def __init__(self, screen, grid):
         self.screen = screen
         self.screen_width = screen.get_width()
         self.screen_height = screen.get_height()
+        self.grid = grid
         self.sidebar = Sidebar(self.screen_width, self.screen_height)
 
         # Core state
@@ -48,25 +54,17 @@ class SimulationManager:
                 self.menu_state = None
 
          # --- NEW: Handle clicks on track menu buttons ---
-        if self.track_menu_active:
-            for event in events:
-                if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-                    mouse_pos = pygame.mouse.get_pos()
-                    # Track option buttons
-                    for btn, info in self.track_buttons:
-                        if btn.rect.collidepoint(mouse_pos):
-                            self.selected_track = info["filename"]
-                            # Optionally, update visuals or print feedback
-                            print(f"Selected track: {info['display_name']}")
-                            break
-                    # Select button
-                    if self.track_selection_button and self.track_selection_button.rect.collidepoint(mouse_pos):
-                        if self.selected_track:
-                            # Here you trigger your track loading logic!
-                            print(f"Confirmed selection: {self.selected_track}")
-                            # You might want to close the menu after this:
-                            self.menu_state = None
-                            # You would call your track loading logic here!
+        if self.menu_state == "track":
+            result = self.track_menu.handle_events(events)
+            if result:
+                if result["action"] == "select_track":
+                    pass
+                elif result["action"] == "confirm_selection":
+                    # Load the selected track, close menu, etc.
+                    selected_filename = result["track"]
+                    print(f"Loading track: {selected_filename}")
+                    json_path = os.path.join("data/Tracks", selected_filename)
+                    self.track_objects, self.segment_objects = load_track_layout(json_path, self.grid)
 
     def update(self):
         # To fill in
@@ -76,7 +74,10 @@ class SimulationManager:
         """
         Draws the main screen, sidebar, and the currently active menu/panel.
         """
+        self.screen.fill((30,30,30))
+        self.grid.draw_grid(self.screen)
         self.sidebar.draw(self.screen)
+        self.draw_track_layout()
 
         # Draw the active menu/panel, if any
         if self.menu_state == "track":
@@ -109,3 +110,14 @@ class SimulationManager:
     def draw_controls_menu(self):
         # TODO: Implement controls/help overlay here
         pass
+
+    def draw_track_layout(self):
+        if not hasattr(self, 'track_objects'):
+            print("no objects")
+            return
+        for piece in self.track_objects.values():
+            print(piece)
+            if isinstance(piece, JunctionTrack) or isinstance(piece, DoubleCurveJunctionTrack):
+                piece.draw_track(self.screen, self.track_objects)
+            else:
+                piece.draw_track(self.screen)
