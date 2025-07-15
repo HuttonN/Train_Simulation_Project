@@ -469,10 +469,6 @@ class DoubleCurveJunctionTrack(BaseTrack):
             int(xR + perp_uxRstart * signal_offset),
             int(yR + perp_uyRstart * signal_offset)
         )
-        # center_RA = (
-        #     int(xR + perp_uxCstart * signal_offset),
-        #     int(yR+ perp_uyCstart * signal_offset)
-        # )
 
         # Compute signal states
         states = self.get_signal_states(track_objects)
