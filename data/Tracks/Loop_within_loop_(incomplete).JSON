@@ -1,4 +1,5 @@
-{
+{   
+    "complete": false,
     "display_name": "Track 1",
     "description": "A sample layout with three junctions, and three stations.",
     "preview_image": "assets/images/Two_Rectangles_with_Two_Junctions_and_Three_Stations.png",
@@ -11,7 +12,7 @@
             "end": [2, 5],
             "connections": {
                 "start": { "track": "left_straight",   "endpoint": "end" },
-                "end":   { "track": "top_straight_1",  "endpoint": "start" }
+                "end":   { "track": "top_junction",  "endpoint": "start" }
             },
             "segment": "segment1"
         },
@@ -21,10 +22,10 @@
             "start": [2, 5],
             "straight_end": [2, 9],
             "curve_control": [2, 8],
-            "curve_end": [3, 9],
+            "curve_end": [4, 9],
             "connections": {
-                "start":         { "track": "middle_station", "endpoint": "end" },
-                "straight_end":  { "track": "middle_straight_2",  "endpoint": "start" },
+                "start":         { "track": "tl_curve", "endpoint": "end" },
+                "straight_end":  { "track": "top_straight_1",  "endpoint": "start" },
                 "curve_end":     { "track": "shortcut",       "endpoint": "start" }
             }
         },
@@ -34,8 +35,8 @@
             "start": [2, 9],
             "end": [2, 15],
             "connections": {
-                "start": { "track": "top_station", "endpoint": "end" },
-                "end":   { "track": "tr_curve",     "endpoint": "start" }
+                "start": { "track": "top_junction", "endpoint": "straight_end" },
+                "end":   { "track": "top_station", "endpoint": "start" }
             },
             "segment": "segment1"
         },
@@ -70,7 +71,7 @@
             "end": [5, 28],
             "connections": {
                 "start": { "track": "top_straight_2", "endpoint": "end" },
-                "end":   { "track": "top_right_straight", "endpoint": "start" }
+                "end":   { "track": "right_straight", "endpoint": "start" }
             },
             "segment": "segment1"
         },
@@ -81,7 +82,7 @@
             "end": [19, 28],
             "connections": {
                 "start": { "track": "tr_curve",   "endpoint": "end" },
-                "end":   { "track": "right_double_curve_junction",   "endpoint": "left_curve_end" }
+                "end":   { "track": "br_curve",   "endpoint": "left_curve_end" }
             },
             "segment": "segment1"
         }, 
