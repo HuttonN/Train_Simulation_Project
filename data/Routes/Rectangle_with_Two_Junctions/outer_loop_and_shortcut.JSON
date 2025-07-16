@@ -1,0 +1,24 @@
+{
+  "track_id": "Rectangle_with_Two_Junctions",
+  "route": [
+    { "track": "top_straight_1", "entry": "A", "exit": "B" },
+    { "track": "top_junction", "entry": "A", "exit": "S" },
+    { "track": "top_straight2", "entry": "A", "exit": "B" },
+    { "track": "tr_curve", "entry": "A", "exit": "C" },
+    { "track": "right_straight", "entry": "A", "exit": "B" },
+    { "track": "br_curve", "entry": "A", "exit": "C" },
+    { "track": "bottom_straight2", "entry": "A", "exit": "B" },
+    { "track": "bottom_junction", "entry": "S", "exit": "A" },
+    { "track": "bottom_straight1", "entry": "A", "exit": "B" },
+    { "track": "bl_curve", "entry": "A", "exit": "C" },
+    { "track": "left_straight", "entry": "A", "exit": "B" },
+    { "track": "tl_curve", "entry": "A", "exit": "C" },
+    { "track": "top_straight_1", "entry": "A", "exit": "B" },
+    { "track": "top_junction", "entry": "A", "exit": "C" },
+    { "track": "shortcut", "entry": "A", "exit": "B" },
+    { "track": "bottom_junction", "entry": "C", "exit": "A" },
+    { "track": "bottom_straight1", "entry": "A", "exit": "B" },
+    { "track": "bl_curve", "entry": "A", "exit": "C" },
+    { "track": "left_straight", "entry": "A", "exit": "B" }
+  ]
+}

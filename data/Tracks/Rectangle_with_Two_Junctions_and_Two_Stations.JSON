@@ -1,0 +1,205 @@
+{
+    "complete": true,
+    "display_name": "Track 1",
+    "description": "A sample layout with three junctions, and three stations.",
+    "preview_image": "assets/images/Rectangle_with_Two_Junctions_and_Two_Stations.png",
+    "tracks": [
+        {
+            "id": "top_straight1",
+            "type": "straight",
+            "start": [5, 9],
+            "end": [5, 14],
+            "connections": {
+                "start": { "track": "tl_curve", "endpoint": "end" },
+                "end":   { "track": "top_station_1",     "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "top_station_1",
+            "type": "station",
+            "start": [5, 14],
+            "end": [5, 19],
+            "name": "Top Station",
+            "connections": {
+                "start": { "track": "top_straight1", "endpoint": "end" },
+                "end":   { "track": "top_straight3", "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+                {
+            "id": "top_straight3",
+            "type": "straight",
+            "start": [5, 19],
+            "end": [5, 21],
+            "connections": {
+                "start": { "track": "top_station_1", "endpoint": "end" },
+                "end":   { "track": "top_junction",     "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "top_junction",
+            "type": "junction",
+            "start": [5, 21],
+            "straight_end": [5, 25],
+            "curve_control": [5, 24],
+            "curve_end": [7, 24],
+            "connections": {
+                "start":         { "track": "top_straight3", "endpoint": "end" },
+                "straight_end":  { "track": "top_straight2",  "endpoint": "start" },
+                "curve_end":     { "track": "shortcut",       "endpoint": "start" }
+            }
+        },
+        {
+            "id": "top_straight2",
+            "type": "straight",
+            "start": [5, 25],
+            "end": [5, 31],
+            "connections": {
+                "start": { "track": "top_junction", "endpoint": "straight_end" },
+                "end":   { "track": "tr_curve",     "endpoint": "start" }
+            },
+            "segment": "segment2"
+        },
+        {
+            "id": "tr_curve",
+            "type": "curve",
+            "start": [5, 31],
+            "control": [5, 34],
+            "end": [8, 34],
+            "connections": {
+                "start": { "track": "top_straight2", "endpoint": "end" },
+                "end":   { "track": "right_straight", "endpoint": "start" }
+            },
+            "segment": "segment2"
+        },
+        {
+            "id": "right_straight",
+            "type": "straight",
+            "start": [8, 34],
+            "end": [12, 34],
+            "connections": {
+                "start": { "track": "tr_curve",   "endpoint": "end" },
+                "end":   { "track": "br_curve",   "endpoint": "start" }
+            },
+            "segment": "segment2"
+        },
+        {
+            "id": "br_curve",
+            "type": "curve",
+            "start": [12, 34],
+            "control": [15, 34],
+            "end": [15, 31],
+            "connections": {
+                "start": { "track": "right_straight", "endpoint": "end" },
+                "end":   { "track": "bottom_straight2", "endpoint": "start" }
+            },
+            "segment": "segment2"
+        },
+        {
+            "id": "bottom_straight2",
+            "type": "straight",
+            "start": [15, 31],
+            "end": [15, 25],
+            "connections": {
+                "start": { "track": "br_curve", "endpoint": "end" },
+                "end":   { "track": "bottom_junction", "endpoint": "straight_end" }
+            },
+            "segment": "segment2"
+        },
+        {
+            "id": "bottom_junction",
+            "type": "junction",
+            "start": [15, 21],
+            "straight_end": [15, 25],
+            "curve_control": [15, 24],
+            "curve_end": [13, 24],
+            "connections": {
+                "start":        { "track": "bottom_straight3", "endpoint": "start" },
+                "straight_end": { "track": "bottom_straight2", "endpoint": "end" },
+                "curve_end":    { "track": "shortcut",         "endpoint": "end" }
+            }
+        },   
+        {
+            "id": "bottom_straight3",
+            "type": "straight",
+            "start": [15, 21],
+            "end": [15, 19],
+            "connections": {
+                "start": { "track": "bottom_junction", "endpoint": "start" },
+                "end":   { "track": "bottom_station_1", "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },     
+        {
+            "id": "bottom_station_1",
+            "type": "station",
+            "start": [15, 19],
+            "end": [15, 14],
+            "name": "Bottom Station",
+            "connections": {
+                "start": { "track": "bottom_straight3", "endpoint": "end" },
+                "end":   { "track": "bottom_straight1", "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "bottom_straight1",
+            "type": "straight",
+            "start": [15, 14],
+            "end": [15, 9],
+            "connections": {
+                "start": { "track": "bottom_station_1",     "endpoint": "end" },
+                "end":   { "track": "bl_curve", "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "bl_curve",
+            "type": "curve",
+            "start": [15, 9],
+            "control": [15, 6],
+            "end": [12, 6],
+            "connections": {
+                "start": { "track": "bottom_straight1", "endpoint": "end" },
+                "end":   { "track": "left_straight",    "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "left_straight",
+            "type": "straight",
+            "start": [12, 6],
+            "end": [8, 6],
+            "connections": {
+                "start": { "track": "bl_curve", "endpoint": "end" },
+                "end":   { "track": "tl_curve", "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "tl_curve",
+            "type": "curve",
+            "start": [8, 6],
+            "control": [5, 6],
+            "end": [5, 9],
+            "connections": {
+                "start": { "track": "left_straight",   "endpoint": "end" },
+                "end":   { "track": "top_straight_1",  "endpoint": "start" }
+            },
+            "segment": "segment1"
+        },
+        {
+            "id": "shortcut",
+            "type": "straight",
+            "start": [7, 24],
+            "end": [13, 24],
+            "connections": {
+                "start": { "track": "top_junction",    "endpoint": "curve_end" },
+                "end":   { "track": "bottom_junction", "endpoint": "curve_end" }
+            },
+            "segment": "segment3"
+        }
+    ]
+}
