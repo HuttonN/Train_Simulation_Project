@@ -2,7 +2,7 @@ import pygame
 from ui.styles import MENU_COLOUR, TEXT_COLOUR, get_track_button_size, get_button_font
 from ui.button import Button
 from utils.track_data import get_all_track_infos
-
+from utils.ui import draw_fade_overlay
 
 class TrackSelectionMenu:
     def __init__(self, surface, screen_width, screen_height):
@@ -21,12 +21,15 @@ class TrackSelectionMenu:
             screen_width * 0.24, screen_height * 0.80
         )
 
-        self.select_button = Button((0, 0), (0, 0), "Select", self.font, (70, 180, 120), TEXT_COLOUR)
+        self.confirm_button = Button((0, 0), (0, 0), "Confirm", self.font, (70, 180, 120), TEXT_COLOUR)
         # Load images ONCE
         self.images = self.load_images()
 
         # Button objects (for click detection)
         self.track_buttons = []
+
+        self.appeared = False
+        self.active = False
         
     def load_images(self):
         images = {}
@@ -42,6 +45,9 @@ class TrackSelectionMenu:
         return images
 
     def draw(self):
+        if not self.appeared:
+            return
+
         images = self.images
         pygame.draw.rect(
             self.surface,
@@ -97,32 +103,36 @@ class TrackSelectionMenu:
             last_option_rect = option_rect
 
             if last_option_rect is not None:
-                select_button_top = last_option_rect.bottom + 30
+                confirm_button_top = last_option_rect.bottom + 30
             else: 
-                select_button_top = title_rect.bottom + 120
+                confirm_button_top = title_rect.bottom + 120
 
-        # Draw the select button
-        select_button_width = self.menu_rect.width * 0.7
-        select_button_rect = pygame.Rect(
-            self.menu_rect.left + (self.menu_rect.width - select_button_width) // 2,
-            select_button_top,
-            select_button_width, 45
+        # Draw the confirm button
+        confirm_button_width = self.menu_rect.width * 0.7
+        confirm_button_rect = pygame.Rect(
+            self.menu_rect.left + (self.menu_rect.width - confirm_button_width) // 2,
+            confirm_button_top,
+            confirm_button_width, 45
         )
-        self.select_button = Button(
-            (select_button_rect.left, select_button_rect.top),
-            (select_button_rect.width, select_button_rect.height),
-            "Select", self.font, (70, 180, 120), TEXT_COLOUR
+        self.confirm_button = Button(
+            (confirm_button_rect.left, confirm_button_rect.top),
+            (confirm_button_rect.width, confirm_button_rect.height),
+            "Confirm", self.font, (70, 180, 120), TEXT_COLOUR
         )
-        self.select_button.render(self.surface)
+        self.confirm_button.render(self.surface)
+
+        # Add faded overlay if not active
+        if not self.active:
+            draw_fade_overlay(self.surface, self.menu_rect)
 
     def get_selected(self):
         return self.selected_track
 
-    def is_select_button_clicked(self, events):
+    def is_confirm_button_clicked(self, events):
         for event in events:
             if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
                 pos = pygame.mouse.get_pos()
-                if self.select_button.button.get_rect(topleft=self.select_button.position).collidepoint(pos):
+                if self.confirm_button.button.get_rect(topleft=self.confirm_button.position).collidepoint(pos):
                     return True
         return False
     
@@ -131,8 +141,8 @@ class TrackSelectionMenu:
             if btn.clicked(events):
                 self.selected_track = info["filename"]
                 return {"action": "select_track", "track": info["filename"]}
-        # Check select button
-        if self.select_button.clicked(events):
+        # Check confirm button
+        if self.confirm_button.clicked(events):
             if self.selected_track:
                 return {"action": "confirm_selection", "track": self.selected_track}
         return None
