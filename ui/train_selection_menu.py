@@ -96,8 +96,8 @@ class TrainSelectionMenu:
 
         # Card title
         card_title = self.font.render(f"Train {card_index + 1}", True, TEXT_COLOUR)
-        card_title_rect = card_title.get_rect(center=(card_rect.centerx, card_rect.top + 25))
-        self.surface.blit(card_title, card_rect)     
+        card_title_rect = card_title.get_rect(center=(card_rect.centerx, card_rect.top + 20))
+        self.surface.blit(card_title, card_title_rect)     
 
 
 
