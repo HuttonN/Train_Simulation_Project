@@ -94,5 +94,10 @@ class TrainSelectionMenu:
         pygame.draw.rect(self.surface, (60,60,60), card_rect, border_radius=8)
         pygame.draw.rect(self.surface, (100, 100, 100), card_rect, width=2, border_radius=8)
 
+        # Card title
+        card_title = self.font.render(f"Train {card_index + 1}", True, TEXT_COLOUR)
+        card_title_rect = card_title.get_rect(center=(card_rect.centerx, card_rect.top + 25))
+        self.surface.blit(card_title, card_rect)     
+
 
 
