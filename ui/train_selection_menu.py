@@ -18,7 +18,7 @@ class TrainSelectionMenu:
                 "confirmed": False
             }
         ]
-        self.available_colours = ["blue", "green", "purple", "yellow"]
+        self.available_colours = ["blue", "green", "purple", "red", "yellow"]
         # self.track_infos = get_all_track_infos()
         # self.selected_track = None
         # self.scroll_offset = 0
@@ -97,7 +97,25 @@ class TrainSelectionMenu:
         # Card title
         card_title = self.font.render(f"Train {card_index + 1}", True, TEXT_COLOUR)
         card_title_rect = card_title.get_rect(center=(card_rect.centerx, card_rect.top + 20))
-        self.surface.blit(card_title, card_title_rect)     
+        self.surface.blit(card_title, card_title_rect)  
 
+        # Colour selection label
+        colour_label = self.font.render("Train Colour:", True, TEXT_COLOUR)
+        self.surface.blit(colour_label, (card_rect.left + 15, card_rect.top + 45))
 
-
+        # Colour options
+        colour_y = card_rect.top + 40
+        for i, colour in enumerate(self.available_colours):
+            colour_rect = pygame.Rect(
+                card_rect.left + 65 + ((i+1)*45),
+                colour_y,
+                30, 30
+            )
+            colour_map = {
+                "blue": (63,72,204,255),
+                "green": (14,209,69,255),
+                "purple": (184,61,186,255),
+                "red": (236,28,36,255),
+                "yellow": (255,202,24)
+            }
+            pygame.draw.rect(self.surface, colour_map[colour], colour_rect, border_radius=4)
