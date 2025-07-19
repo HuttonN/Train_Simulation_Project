@@ -19,11 +19,10 @@ class TrainSelectionMenu:
             }
         ]
         self.available_colours = ["blue", "green", "purple", "red", "yellow"]
-        # self.track_infos = get_all_track_infos()
-        # self.selected_track = None
-        # self.scroll_offset = 0
-        # self.max_display = 2
-
+        
+        # Store color button rectangles for click detection
+        self.color_rects = []
+        
         self.font = get_button_font(screen_width)
         self.option_size = get_track_button_size(screen_width, screen_height)
         self.menu_rect = pygame.Rect(
@@ -103,6 +102,9 @@ class TrainSelectionMenu:
         colour_label = self.font.render("Train Colour:", True, TEXT_COLOUR)
         self.surface.blit(colour_label, (card_rect.left + 15, card_rect.top + 45))
 
+        # Clear color rects for this frame
+        self.color_rects.clear()
+
         # Colour options
         colour_y = card_rect.top + 40
         for i, colour in enumerate(self.available_colours):
@@ -111,6 +113,10 @@ class TrainSelectionMenu:
                 colour_y,
                 30, 30
             )
+            
+            # Store rect for click detection
+            self.color_rects.append((colour_rect, colour, card_index))
+            
             colour_map = {
                 "blue": (63,72,204,255),
                 "green": (14,209,69,255),
@@ -119,3 +125,19 @@ class TrainSelectionMenu:
                 "yellow": (255,202,24)
             }
             pygame.draw.rect(self.surface, colour_map[colour], colour_rect, border_radius=4)
+
+            if card["colour"] == colour:
+                pygame.draw.rect(self.surface, (255, 255, 255), colour_rect, width=3, border_radius=4)
+
+    def handle_events(self, events):
+        for event in events:
+            if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
+                pos = pygame.mouse.get_pos()
+                
+                # Check color selection clicks
+                for rect, colour, card_index in self.color_rects:
+                    if rect.collidepoint(pos):
+                        self.train_cards[card_index]["colour"] = colour
+                        return {"action": "color_selected", "card": card_index, "color": colour}
+        
+        return None
