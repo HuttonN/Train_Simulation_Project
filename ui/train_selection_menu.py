@@ -24,35 +24,17 @@ class TrainSelectionMenu:
         self.color_rects = []
         
         self.font = get_button_font(screen_width)
-        self.option_size = get_track_button_size(screen_width, screen_height)
         self.menu_rect = pygame.Rect(
             screen_width * 0.38, screen_height * 0.02,
             screen_width * 0.24, screen_height * 0.80
         )
 
-        # self.select_button = Button((0, 0), (0, 0), "Select", self.font, (70, 180, 120), TEXT_COLOUR)
-        # Load images ONCE
-        # self.images = self.load_images()
-
-        # Button objects (for click detection)
-        # self.track_buttons = []
+        self.back_button = Button((0, 0), (0, 0), "Back", self.font, (70, 180, 120), TEXT_COLOUR)
+        self.next_button = Button((0, 0), (0, 0), "Next", self.font, (70, 180, 120), TEXT_COLOUR)
 
         self.appeared = False
         self.active = False
         
-    # def load_images(self):
-    #     images = {}
-    #     thumb_size = (int(self.option_size[0]*0.85), int(self.option_size[1]*0.7))
-    #     for info in self.track_infos:
-    #         try:
-    #             img = pygame.image.load(info["preview_image"]).convert_alpha()
-    #             img = pygame.transform.smoothscale(img, thumb_size)
-    #         except Exception as e:
-    #             print(f"Error loading {info['preview_image']}: {e}")
-    #             img = None
-    #         images[info["filename"]] = img
-    #     return images
-
     def draw(self):
         if not self.appeared:
             return
@@ -71,6 +53,37 @@ class TrainSelectionMenu:
 
         # Draw first train card
         self.draw_train_card(0, title_rect.bottom + 20)
+
+        # Draw the back button
+        back_button_top = self.menu_rect.bottom - 87
+        back_button_width = self.menu_rect.width * 0.35
+        back_button_rect = pygame.Rect(
+            self.menu_rect.left + (self.menu_rect.width //2 - back_button_width) // 2,
+            back_button_top,
+            back_button_width, 45
+        )
+        self.back_button = Button(
+            (back_button_rect.left, back_button_rect.top),
+            (back_button_rect.width, back_button_rect.height),
+            "Back", self.font, (70, 180, 120), TEXT_COLOUR
+        )
+        self.back_button.render(self.surface)
+
+
+        # Draw the next button
+        next_button_top = self.menu_rect.bottom - 87
+        next_button_width = self.menu_rect.width * 0.35
+        next_button_rect = pygame.Rect(
+            self.menu_rect.left + (self.menu_rect.width *(6/4) - next_button_width) // 2,
+            next_button_top,
+            next_button_width, 45
+        )
+        self.next_button = Button(
+            (next_button_rect.left, next_button_rect.top),
+            (next_button_rect.width, next_button_rect.height),
+            "Next", self.font, (70, 180, 120), TEXT_COLOUR
+        )
+        self.next_button.render(self.surface)
  
         # Add faded overlay if not active
         if not self.active:
