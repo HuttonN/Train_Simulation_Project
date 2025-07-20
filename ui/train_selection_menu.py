@@ -100,16 +100,19 @@ class TrainSelectionMenu:
 
         # Colour selection label
         colour_label = self.font.render("Train Colour:", True, TEXT_COLOUR)
-        self.surface.blit(colour_label, (card_rect.left + 15, card_rect.top + 45))
+        colour_label_rect = colour_label.get_rect()
+        colour_label_rect.topleft = (card_rect.left + 15, card_rect.top + 45)
+        self.surface.blit(colour_label, colour_label_rect)
 
         # Clear color rects for this frame
         self.color_rects.clear()
 
         # Colour options
-        colour_y = card_rect.top + 40
+        colour_start_x = colour_label_rect.right + 20
+        colour_y = colour_label_rect.centery - 15
         for i, colour in enumerate(self.available_colours):
             colour_rect = pygame.Rect(
-                card_rect.left + 65 + ((i+1)*45),
+                colour_start_x + (i*45),
                 colour_y,
                 30, 30
             )
@@ -118,10 +121,10 @@ class TrainSelectionMenu:
             self.color_rects.append((colour_rect, colour, card_index))
             
             colour_map = {
-                "blue": (63,72,204,255),
-                "green": (14,209,69,255),
-                "purple": (184,61,186,255),
-                "red": (236,28,36,255),
+                "blue": (63,72,204),
+                "green": (14,209,69),
+                "purple": (184,61,186),
+                "red": (236,28,36),
                 "yellow": (255,202,24)
             }
             pygame.draw.rect(self.surface, colour_map[colour], colour_rect, border_radius=4)
