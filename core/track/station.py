@@ -13,6 +13,8 @@ class StationTrack(StraightTrack):
 
     Designed for use only on straight track sections.
     """
+
+    # Class constants
     STATION_COLOUR = (220, 170, 50)
     TEXT_COLOUR = (30, 30, 30)
     STATION_WIDTH = 44
@@ -33,8 +35,8 @@ class StationTrack(StraightTrack):
             start_row, start_col: Grid coordinates of one endpoint.
             end_row, end_col: Grid coordinates of the other endpoint.
             name (str): Station name.
-            passenger_count (int): Number of passengers currently waiting at the station.
             track_id (str, optional): Identifier for the station track.
+            track_type (str): Type identifier
             position (bool, optional): Platform side; True = one side, False = the other.
         """
         super().__init__(grid, start_row, start_col, end_row, end_col, track_id, track_type)
@@ -49,116 +51,13 @@ class StationTrack(StraightTrack):
                 f"StationTrack '{self.name}' is too short: {track_piece_length:.1f}px (minimum {self.MIN_PLATFORM_LENGTH}px needed)."
             )
         self.PLATFORM_LENGTH = track_piece_length # ensures it matches the length of the track piece
+    
     #endregion
 
-    #region --- Methods -------------------------------------------------------------
-
-    def draw_track(self, surface):
-        """
-        Draws the straight track and overlays the station platform and name label.
-
-        Arguments:
-            surface: Pygame surface to render onto.
-        """
-        super().draw_track(surface)
-
-        # Direction vectors
-        dx = self.xB - self.xA
-        dy = self.yB - self.yA
-        length = math.hypot(dx, dy)
-        if length == 0:
-            return
-
-        # Unit vectors
-        ux, uy = dx / length, dy / length
-        side = 1 if self.position else -1
-        perp_x, perp_y = -uy * side, ux * side
-
-        # Track midpoint
-        mx, my = (self.xA + self.xB) / 2, (self.yA + self.yB) / 2
-
-        # Move perpendicularly from midpoint by GAP_SIZE + half platform width (to ensure GAP is from track to edge)
-        station_offset = self.GAP_SIZE + self.STATION_WIDTH / 2 + self.PLATFORM_WIDTH
-        station_px = mx + perp_x * station_offset
-        station_py = my + perp_y * station_offset
-        platform_offset = self.GAP_SIZE + self.PLATFORM_WIDTH / 2
-        platform_px = mx + perp_x * platform_offset
-        platform_py = my + perp_y * platform_offset
-
-        # 4. Create the platform surface (unrotated)
-        station_surface = pygame.Surface((self.STATION_LENGTH, self.STATION_WIDTH), pygame.SRCALPHA)
-        pygame.draw.rect(station_surface, self.STATION_COLOUR, (0, 0, self.STATION_LENGTH, self.STATION_WIDTH))
-        platform_surface = pygame.Surface((self.PLATFORM_LENGTH, self.PLATFORM_WIDTH), pygame.SRCALPHA)
-        pygame.draw.rect(platform_surface, self.PLATFORM_COLOUR, (0, 0, self.PLATFORM_LENGTH, self.PLATFORM_WIDTH))
-
-        # 5. Draw label in center
-        label = f"{self.name} ({self.get_passenger_count()})"
-        font = pygame.font.SysFont(None, 16)
-        text = font.render(label, True, self.TEXT_COLOUR)
-        text_rect = text.get_rect(center=(self.STATION_LENGTH / 2, self.STATION_WIDTH / 2))
-        station_surface.blit(text, text_rect)
-
-        # 6. Rotate platform surface to match track angle (note: negative for pygame)
-        angle = math.degrees(math.atan2(dy, dx))
-        rotated_surface = pygame.transform.rotate(station_surface, -angle)
-        rotated_platform = pygame.transform.rotate(platform_surface, -angle)
-
-        # 7. Place rotated surface centered at (px, py)
-        rotated_station_rect = rotated_surface.get_rect(center=(station_px, station_py))
-        rotated_platform_rect = rotated_platform.get_rect(center=(platform_px, platform_py))
-        surface.blit(rotated_surface, rotated_station_rect.topleft)
-        surface.blit(rotated_platform, rotated_platform_rect.topleft)
-
-        # 8. Draw waiting passengers as dots on the platform
-        if self.get_passenger_count() > 0:
-            self.draw_passengers_on_platform(
-                surface, platform_px, platform_py, angle
-            )
-
-        #endregion
-
-    def draw_passengers_on_platform(self, surface, base_x, base_y, angle):
-        """
-        Draws passengers as coloured dots on the station platform.
-        - base_x, base_y: center of the unrotated platform on the screen
-        - angle: rotation in degrees
-        - passenger_list: list of Passenger objects
-        """
-        DOT_RADIUS = 2
-        DOT_DIAM = DOT_RADIUS * 2
-        DOT_GAP = 1
-        GRID_CELL = DOT_DIAM + DOT_GAP
-
-        dots_per_row = int(self.PLATFORM_WIDTH // GRID_CELL)
-        dots_per_col = int(self.PLATFORM_LENGTH // GRID_CELL)
-
-        max_dots = dots_per_row * dots_per_col
-        n_passengers = min(self.get_passenger_count(), max_dots)
-
-        # Always fill from one edge, row by row (e.g., "top" edge in unrotated platform)
-        dot_positions = []
-        for idx in range(n_passengers):
-            row = idx // dots_per_row
-            col = idx % dots_per_row
-            # Grid position, origin at center of platform
-            x = -self.PLATFORM_LENGTH/2 + GRID_CELL/2 + row * GRID_CELL
-            y = -self.PLATFORM_WIDTH/2 + GRID_CELL/2 + col * GRID_CELL
-
-            # Rotate to platform orientation
-            s = math.sin(math.radians(angle))
-            c = math.cos(math.radians(angle))
-            rot_x = c * x - s * y
-            rot_y = s * x + c * y
-            screen_x = int(base_x + rot_x)
-            screen_y = int(base_y + rot_y)
-            dot_positions.append((screen_x, screen_y))
-
-        # Draw the passenger dots (you can use each passenger's colour or a default)
-        for idx, pos in enumerate(dot_positions):
-            passenger = self.waiting_passengers[idx]
-            pygame.draw.circle(surface, passenger.colour, pos, DOT_RADIUS)
+    #region --- Passenger Management Methods ----------------------------------------
 
     def get_passenger_count(self):
+        """Return the number of passengers currently waiting at the station."""
         return len(self.waiting_passengers)
     
     def get_waiting_passengers(self):
@@ -173,13 +72,17 @@ class StationTrack(StraightTrack):
             except ValueError:
                 pass
 
+    #endregion
+
+    #region --- Platform Geometry Methods -------------------------------------------
+
     def get_platform_corners(self):
         """
         Returns a list of the four corners (x, y) of the platform rectangle,
         in screen coordinates, in order: [top_left, top_right, bottom_right, bottom_left]
         (relative to the platform's orientation).
         """
-        # Platform center and angle as before
+        # Platform center and angle calculation
         dx = self.xB - self.xA
         dy = self.yB - self.yA
         length = math.hypot(dx, dy)
@@ -197,7 +100,6 @@ class StationTrack(StraightTrack):
         half_W = self.PLATFORM_WIDTH / 2
 
         # Corners in platform local coordinates (centered, unrotated)
-        # Order: [(-L/2, -W/2), (L/2, -W/2), (L/2, W/2), (-L/2, W/2)]
         corners_local = [
             (-half_L, -half_W),
             ( half_L, -half_W),
@@ -244,3 +146,112 @@ class StationTrack(StraightTrack):
                 min_dist2 = dist2
                 closest_point = (px, py)
         return closest_point
+
+    #endregion
+
+    #region --- Rendering Methods ---------------------------------------------------
+
+    def draw_track(self, surface):
+        """
+        Draws the straight track and overlays the station platform and name label.
+
+        Arguments:
+            surface: Pygame surface to render onto.
+        """
+        super().draw_track(surface)
+
+        # Direction vectors
+        dx = self.xB - self.xA
+        dy = self.yB - self.yA
+        length = math.hypot(dx, dy)
+        if length == 0:
+            return
+
+        # Unit vectors
+        ux, uy = dx / length, dy / length
+        side = 1 if self.position else -1
+        perp_x, perp_y = -uy * side, ux * side
+
+        # Track midpoint
+        mx, my = (self.xA + self.xB) / 2, (self.yA + self.yB) / 2
+
+        # Calculate platform and station positions
+        station_offset = self.GAP_SIZE + self.STATION_WIDTH / 2 + self.PLATFORM_WIDTH
+        station_px = mx + perp_x * station_offset
+        station_py = my + perp_y * station_offset
+        platform_offset = self.GAP_SIZE + self.PLATFORM_WIDTH / 2
+        platform_px = mx + perp_x * platform_offset
+        platform_py = my + perp_y * platform_offset
+
+        # Create the platform surface (unrotated)
+        station_surface = pygame.Surface((self.STATION_LENGTH, self.STATION_WIDTH), pygame.SRCALPHA)
+        pygame.draw.rect(station_surface, self.STATION_COLOUR, (0, 0, self.STATION_LENGTH, self.STATION_WIDTH))
+        platform_surface = pygame.Surface((self.PLATFORM_LENGTH, self.PLATFORM_WIDTH), pygame.SRCALPHA)
+        pygame.draw.rect(platform_surface, self.PLATFORM_COLOUR, (0, 0, self.PLATFORM_LENGTH, self.PLATFORM_WIDTH))
+
+        # Draw label in center
+        label = f"{self.name} ({self.get_passenger_count()})"
+        font = pygame.font.SysFont(None, 16)
+        text = font.render(label, True, self.TEXT_COLOUR)
+        text_rect = text.get_rect(center=(self.STATION_LENGTH / 2, self.STATION_WIDTH / 2))
+        station_surface.blit(text, text_rect)
+
+        # Rotate platform surface to match track angle
+        angle = math.degrees(math.atan2(dy, dx))
+        rotated_surface = pygame.transform.rotate(station_surface, -angle)
+        rotated_platform = pygame.transform.rotate(platform_surface, -angle)
+
+        # Place rotated surface centered at (px, py)
+        rotated_station_rect = rotated_surface.get_rect(center=(station_px, station_py))
+        rotated_platform_rect = rotated_platform.get_rect(center=(platform_px, platform_py))
+        surface.blit(rotated_surface, rotated_station_rect.topleft)
+        surface.blit(rotated_platform, rotated_platform_rect.topleft)
+
+        # Draw waiting passengers as dots on the platform
+        if self.get_passenger_count() > 0:
+            self.draw_passengers_on_platform(
+                surface, platform_px, platform_py, angle
+            )
+
+    def draw_passengers_on_platform(self, surface, base_x, base_y, angle):
+        """
+        Draws passengers as coloured dots on the station platform.
+        - base_x, base_y: center of the unrotated platform on the screen
+        - angle: rotation in degrees
+        - passenger_list: list of Passenger objects
+        """
+        DOT_RADIUS = 2
+        DOT_DIAM = DOT_RADIUS * 2
+        DOT_GAP = 1
+        GRID_CELL = DOT_DIAM + DOT_GAP
+
+        dots_per_row = int(self.PLATFORM_WIDTH // GRID_CELL)
+        dots_per_col = int(self.PLATFORM_LENGTH // GRID_CELL)
+
+        max_dots = dots_per_row * dots_per_col
+        n_passengers = min(self.get_passenger_count(), max_dots)
+
+        # Fill from one edge, row by row
+        dot_positions = []
+        for idx in range(n_passengers):
+            row = idx // dots_per_row
+            col = idx % dots_per_row
+            # Grid position, origin at center of platform
+            x = -self.PLATFORM_LENGTH/2 + GRID_CELL/2 + row * GRID_CELL
+            y = -self.PLATFORM_WIDTH/2 + GRID_CELL/2 + col * GRID_CELL
+
+            # Rotate to platform orientation
+            s = math.sin(math.radians(angle))
+            c = math.cos(math.radians(angle))
+            rot_x = c * x - s * y
+            rot_y = s * x + c * y
+            screen_x = int(base_x + rot_x)
+            screen_y = int(base_y + rot_y)
+            dot_positions.append((screen_x, screen_y))
+
+        # Draw the passenger dots
+        for idx, pos in enumerate(dot_positions):
+            passenger = self.waiting_passengers[idx]
+            pygame.draw.circle(surface, passenger.colour, pos, DOT_RADIUS)
+
+    #endregion
