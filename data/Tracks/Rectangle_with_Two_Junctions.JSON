@@ -144,5 +144,13 @@
                 "end":   { "track": "bottom_junction", "endpoint": "curve_end" }
             }
         }
+    ],
+    "available_routes": [
+        {
+            "id": "outer_loop_and_shortcut",
+            "name": "Outer Loop and Shortcut",
+            "description": "Complete circuit with express shortcut option",
+            "file_path": "data/Routes/Rectangle_with_Two_Junctions/outer_loop_and_shortcut.JSON"
+        }
     ]
 }

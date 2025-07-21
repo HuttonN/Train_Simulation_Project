@@ -285,5 +285,19 @@
             },
             "segment": "segment6"
         }
+    ],
+    "available_routes": [
+        {
+            "id": "bottom_loop",
+            "name": "Bottom Loop",
+            "description": "Circuit around the bottom section of the track",
+            "file_path": "data/Routes/Two_Rectangles_with_Two_Junctions_and_Three_Stations/bottom_loop.JSON"
+        },
+        {
+            "id": "top_loop",
+            "name": "Top Loop",
+            "description": "Circuit around the top section of the track",
+            "file_path": "data/Routes/Two_Rectangles_with_Two_Junctions_and_Three_Stations/top_loop.JSON"
+        }
     ]
 }

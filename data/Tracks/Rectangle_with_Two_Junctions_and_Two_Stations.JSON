@@ -201,5 +201,13 @@
             },
             "segment": "segment3"
         }
+    ],
+    "available_routes": [
+        {
+            "id": "outer_loop_and_shortcut",
+            "name": "Outer Loop and Shortcut",
+            "description": "Complete circuit visiting both stations with express shortcut option",
+            "file_path": "data/Routes/Rectangle_with_Two_Junctions_and_Two_Stations/outer_loop_and_shortcut.JSON"
+        }
     ]
 }
