@@ -49,7 +49,22 @@ class StraightTrack(BaseTrack):
 
     #endregion
 
-    #region --- Geometry Methods ----------------------------------------------------
+    #region --- Geometry & Movement Methods -----------------------------------------
+
+    def get_length(self, entry_ep, exit_ep):
+        """
+        Return Euclidean distance between two endpoints.
+
+        Arguments:
+            entry_ep (str): Start endpoint label.
+            exit_ep (str): End endpoint label.
+
+        Returns:
+            float: Distance (pixels) between endpoints.
+        """
+        x1, y1 = self.get_endpoint_coords(entry_ep)
+        x2, y2 = self.get_endpoint_coords(exit_ep)
+        return ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
 
     def get_angle(self, entry_ep, exit_ep):
         """
@@ -70,20 +85,22 @@ class StraightTrack(BaseTrack):
         else:
             raise ValueError("Invalid endpoint pair for straight track.")
         
-    def get_point_and_angle(self, t, direction):
+    def get_position_at_distance(self, entry_ep, exit_ep, s):
         """
-        Return interpolated (x, y) position and angle at parameter t (0=start, 1=end).
+        Return (x, y, angle) at distance s along the track piece from entry_ep to exit_ep.
 
         Arguments:
-            t (float): Fractional position along the track piece (0=start, 1=end).
-            direction (str): "A_to_B" or "B_to_A". If "B_to_A", t is reversed.
+            entry_ep (str): Start endpoint label.
+            exit_ep (str): End endpoint label.
+            s (float): Distance along the track piece (pixels).
 
         Returns:
-            tuple: ((x, y), angle)
+            tuple: (x, y, angle) where (x, y) is the position and angle in degrees.
         """
-        if direction == "B_to_A":
-            t = 1-t
-        return self.get_point_at_t("A", "B", t)
+        length = self.get_length(entry_ep, exit_ep)
+        t = s / length if length != 0 else 0
+        t = min(t, 1)
+        return self.get_point_at_t(entry_ep, exit_ep, t)
         
     def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
         """
@@ -122,38 +139,25 @@ class StraightTrack(BaseTrack):
         """
         tx, ty = self.get_endpoint_coords(exit_ep)
         return abs(train.x - tx) < 1 and abs(train.y - ty) < 1
-    
-    def get_length(self, entry_ep, exit_ep):
+
+    #endregion
+        
+    #region --- Position & Interpolation Methods ------------------------------------
+
+    def get_point_and_angle(self, t, direction):
         """
-        Return Euclidean distance between two endpoints.
+        Return interpolated (x, y) position and angle at parameter t (0=start, 1=end).
 
         Arguments:
-            entry_ep (str): Start endpoint label.
-            exit_ep (str): End endpoint label.
+            t (float): Fractional position along the track piece (0=start, 1=end).
+            direction (str): "A_to_B" or "B_to_A". If "B_to_A", t is reversed.
 
         Returns:
-            float: Distance (pixels) between endpoints.
+            tuple: ((x, y), angle)
         """
-        x1, y1 = self.get_endpoint_coords(entry_ep)
-        x2, y2 = self.get_endpoint_coords(exit_ep)
-        return ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
-    
-    def get_position_at_distance(self, entry_ep, exit_ep, s):
-        """
-        Return (x, y, angle) at distance s along the track piece from entry_ep to exit_ep.
-
-        Arguments:
-            entry_ep (str): Start endpoint label.
-            exit_ep (str): End endpoint label.
-            s (float): Distance along the track piece (pixels).
-
-        Returns:
-            tuple: (x, y, angle) where (x, y) is the position and angle in degrees.
-        """
-        length = self.get_length(entry_ep, exit_ep)
-        t = s / length if length != 0 else 0
-        t = min(t, 1)
-        return self.get_point_at_t(entry_ep, exit_ep, t)
+        if direction == "B_to_A":
+            t = 1-t
+        return self.get_point_at_t("A", "B", t)
     
     def get_point_at_t(self, entry_ep, exit_ep, t):
         """
