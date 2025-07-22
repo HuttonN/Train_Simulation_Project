@@ -50,12 +50,12 @@ class JunctionTrack(BaseTrack):
         self.curve_end_row = curve_end_row
         self.curve_end_col = curve_end_col
 
+        # Junction state
         self.branch_activated = branch_activated # True if curve active, false if straight active
         self.is_switching = False
         self.switching_until = 0
         self.pending_branch = None
         self.switch_delay = 2000 # 2 seconds
-
         self.occupied_by = None
 
         # Convert grid coordinates to pixel coordinates for rendering and geometry
@@ -76,16 +76,14 @@ class JunctionTrack(BaseTrack):
             "C": (self.curve_end_row, self.curve_end_col)
         }
 
-        # Compute total arc length using Simpson's rule
+        # Precompute geometry
         self.curve_length = self.total_arc_length()
         self.even_t_table = self.build_even_length_table(n_samples=150)
-
-        # Precompute straight angle
         self.straight_angle = math.degrees(math.atan2(self.yS - self.yA, self.xS - self.xA))
 
     #endregion
 
-    #region --- Control / State Methods ---------------------------------------------
+    #region --- Control & State Methods ---------------------------------------------
         
     def request_branch(self, target_branch):
         """
@@ -145,6 +143,27 @@ class JunctionTrack(BaseTrack):
 
     #region --- Geometry & Movement Methods -----------------------------------------
         
+    def get_length(self, entry_ep, exit_ep):
+        """
+        Get the length (pixels) between endpoints.
+
+        Arguments:
+            entry_ep (str): Start endpoint.
+            exit_ep (str): End endpoint.
+
+        """
+        # Handle straight (A<->S)
+        if {entry_ep, exit_ep} == {"A", "S"}:
+            x1, y1 = self.get_endpoint_coords(entry_ep)
+            x2, y2 = self.get_endpoint_coords(exit_ep)
+            return ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
+        # Handle curve (A<->C)
+        elif {entry_ep, exit_ep} == {"A", "C"}:
+            return self.curve_length
+        else:
+            # Not a direct connection: could be extended, for now just return 0
+            return 0
+
     def get_angle(self, entry_ep, exit_ep):
         """
         Returns the angle of travel for a movement from entry_ep to exit_ep.
@@ -173,26 +192,40 @@ class JunctionTrack(BaseTrack):
             x_to, y_to = self.get_endpoint_coords(exit_ep)
             return math.degrees(math.atan2(y_to - y_from, x_to - x_from))
         
-    def get_point_and_angle(self, t, direction="A_to_C"):
+    def get_position_at_distance(self, entry_ep, exit_ep, s):
         """
-        Returns a point and angle on the curve at parameter t (0 ≤ t ≤ 1).
+        Return (x, y, angle) at distance s along the track from entry_ep to exit_ep.
 
-        Arguments:
-            t: curve parameter in [0,1]
-            direction: "A_to_C" or "C_to_A"
+        Args:
+            entry_ep (str): Start endpoint.
+            exit_ep (str): End endpoint.
+            s (float): Distance along the track.
+
+        Returns:
+            tuple: (x, y, angle)
         """
-        if direction == "C_to_A":
-            t = 1 - t
-        point = quadratic_bezier(
-            t, (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
-        )
-        dx, dy = bezier_derivative(
-            t, (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
-        )
-        if direction == "C_to_A":
-            dx, dy = -dx, -dy
-        angle = math.degrees(math.atan2(dy, dx))
-        return point, angle
+        if {entry_ep, exit_ep} == {"A", "S"}:
+            length = self.get_length(entry_ep, exit_ep)
+            t = s / length if length != 0 else 0
+            if t > 1: t = 1
+            x1, y1 = self.get_endpoint_coords(entry_ep)
+            x2, y2 = self.get_endpoint_coords(exit_ep)
+            x = (1 - t) * x1 + t * x2
+            y = (1 - t) * y1 + t * y2
+            angle = self.get_angle(entry_ep, exit_ep)
+            return (x, y, angle)
+        elif {entry_ep, exit_ep} == {"A", "C"}:
+            length = self.get_length(entry_ep, exit_ep)
+            direction = "A_to_C" if entry_ep == "A" and exit_ep == "C" else "C_to_A"
+            s = max(0, min(s, length))
+            t = self.arc_length_to_t(s, direction=direction)
+            (x, y), angle = self.get_point_and_angle(t, direction=direction)
+            return (x, y, angle)
+        else:
+            # Not a direct connection
+            x, y = self.get_endpoint_coords(entry_ep)
+            angle = self.get_angle(entry_ep, exit_ep)
+            return (x, y, angle)
     
     def move_along_track_piece(self, train, speed, entry_ep, exit_ep):
         """
@@ -271,62 +304,6 @@ class JunctionTrack(BaseTrack):
             tx, ty = self.get_endpoint_coords(exit_ep)
             return abs(train.x - tx) < 1 and abs(train.y - ty) < 1
         
-    def get_length(self, entry_ep, exit_ep):
-        """
-        Get the length (pixels) between endpoints.
-
-        Arguments:
-            entry_ep (str): Start endpoint.
-            exit_ep (str): End endpoint.
-
-        """
-        # Handle straight (A<->S)
-        if {entry_ep, exit_ep} == {"A", "S"}:
-            x1, y1 = self.get_endpoint_coords(entry_ep)
-            x2, y2 = self.get_endpoint_coords(exit_ep)
-            return ((x2 - x1)**2 + (y2 - y1)**2) ** 0.5
-        # Handle curve (A<->C)
-        elif {entry_ep, exit_ep} == {"A", "C"}:
-            return self.curve_length
-        else:
-            # Not a direct connection: could be extended, for now just return 0
-            return 0
-
-    def get_position_at_distance(self, entry_ep, exit_ep, s):
-        """
-        Return (x, y, angle) at distance s along the track from entry_ep to exit_ep.
-
-        Args:
-            entry_ep (str): Start endpoint.
-            exit_ep (str): End endpoint.
-            s (float): Distance along the track.
-
-        Returns:
-            tuple: (x, y, angle)
-        """
-        if {entry_ep, exit_ep} == {"A", "S"}:
-            length = self.get_length(entry_ep, exit_ep)
-            t = s / length if length != 0 else 0
-            if t > 1: t = 1
-            x1, y1 = self.get_endpoint_coords(entry_ep)
-            x2, y2 = self.get_endpoint_coords(exit_ep)
-            x = (1 - t) * x1 + t * x2
-            y = (1 - t) * y1 + t * y2
-            angle = self.get_angle(entry_ep, exit_ep)
-            return (x, y, angle)
-        elif {entry_ep, exit_ep} == {"A", "C"}:
-            length = self.get_length(entry_ep, exit_ep)
-            direction = "A_to_C" if entry_ep == "A" and exit_ep == "C" else "C_to_A"
-            s = max(0, min(s, length))
-            t = self.arc_length_to_t(s, direction=direction)
-            (x, y), angle = self.get_point_and_angle(t, direction=direction)
-            return (x, y, angle)
-        else:
-            # Not a direct connection
-            x, y = self.get_endpoint_coords(entry_ep)
-            angle = self.get_angle(entry_ep, exit_ep)
-            return (x, y, angle)
-        
     def get_relative_branch_position(self):
         """
         Returns 'left' or 'right' for the curve branch relative to straight,
@@ -348,11 +325,35 @@ class JunctionTrack(BaseTrack):
                 f"Junction geometry error: curve and straight branches are collinear at A=({xA},{yA}), "
                 f"S=({xS},{yS}), C=({xC},{yC}) in {self!r}"
             )
+    
+    #endregion
+    
+    #region --- Position & Interpolation Methods ------------------------------------
 
+    def get_point_and_angle(self, t, direction="A_to_C"):
+        """
+        Returns a point and angle on the curve at parameter t (0 ≤ t ≤ 1).
+
+        Arguments:
+            t: curve parameter in [0,1]
+            direction: "A_to_C" or "C_to_A"
+        """
+        if direction == "C_to_A":
+            t = 1 - t
+        point = quadratic_bezier(
+            t, (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
+        )
+        dx, dy = bezier_derivative(
+            t, (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
+        )
+        if direction == "C_to_A":
+            dx, dy = -dx, -dy
+        angle = math.degrees(math.atan2(dy, dx))
+        return point, angle
 
     #endregion
-
-    #region --- Curve Length/Arc Methods --------------------------------------------
+    
+    #region --- Arc Length & Parameter Conversion -----------------------------------
 
     def curve_points(self):
         """
@@ -442,39 +443,10 @@ class JunctionTrack(BaseTrack):
             t = self.arc_length_to_t(s, direction="A_to_C")
             ts.append(t)
         return ts
-    
-    #endregion
-    
-    #region --- Rendering Methods ---------------------------------------------------
-
-    def draw_track(self, surface, track_objects, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
-        """
-        Draw the junction on the given surface, highlighting the active branch.
-
-        Arguments:
-            surface: Pygame surface.
-            activated_color: Color for the active branch.
-            non_activated_color: Color for the inactive branch.
-            n_curve_points: Number of points for curve rendering.
-        """
-        curve_points = [
-            quadratic_bezier(
-                t/(n_curve_points-1),
-                (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
-        ) for t in range(n_curve_points)
-        ]
-        if self.branch_activated:
-            pygame.draw.lines(surface, activated_color, False, curve_points, 5)
-            pygame.draw.line(surface, non_activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
-            self.draw_signals(surface, track_objects)
-        else:
-            pygame.draw.lines(surface, non_activated_color, False, curve_points, 5)
-            pygame.draw.line(surface, activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
-            self.draw_signals(surface, track_objects)
 
     #endregion
 
-    #region --- Reservation/Segment Methods -----------------------------------------
+    #region --- Reservation & Segment Management ------------------------------------
 
     def can_reserve_junction(self, train, exit_segment):
         """
@@ -500,11 +472,15 @@ class JunctionTrack(BaseTrack):
         """
         if self.occupied_by == train:
             self.occupied_by = None
-    #endregion
 
     def get_segment_for_branch(self, track_objects, endpoint_label):
+        """Get segment object for a given branch endpoint"""
         id = self.connections[endpoint_label]["track"]
         return track_objects[id].segment
+    
+    #endregion
+
+    #region --- Signal & Status Methods ---------------------------------------------
 
     def get_signal_states(self, track_objects):
         """
@@ -538,6 +514,34 @@ class JunctionTrack(BaseTrack):
 
         return signal_states
 
+    #endregion
+    
+    #region --- Rendering Methods ---------------------------------------------------
+
+    def draw_track(self, surface, track_objects, activated_color=(200, 180, 60), non_activated_color=(255, 0, 0), n_curve_points=50):
+        """
+        Draw the junction on the given surface, highlighting the active branch.
+
+        Arguments:
+            surface: Pygame surface.
+            activated_color: Color for the active branch.
+            non_activated_color: Color for the inactive branch.
+            n_curve_points: Number of points for curve rendering.
+        """
+        curve_points = [
+            quadratic_bezier(
+                t/(n_curve_points-1),
+                (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)
+        ) for t in range(n_curve_points)
+        ]
+        if self.branch_activated:
+            pygame.draw.lines(surface, activated_color, False, curve_points, 5)
+            pygame.draw.line(surface, non_activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
+            self.draw_signals(surface, track_objects)
+        else:
+            pygame.draw.lines(surface, non_activated_color, False, curve_points, 5)
+            pygame.draw.line(surface, activated_color, (self.xA, self.yA), (self.xS, self.yS), 5)
+            self.draw_signals(surface, track_objects)
 
     def draw_signals(self, surface, track_objects):
         """
@@ -628,4 +632,4 @@ class JunctionTrack(BaseTrack):
         draw_signal_indicator(surface, center_SA, states["signal_SA"])
         draw_signal_indicator(surface, center_CA, states["signal_CA"])
 
-
+    #endregion
