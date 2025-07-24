@@ -41,4 +41,7 @@ def load_track_layout(json_path, grid):
             track_object.segment = None
 
         track_objects[tid] = track_object
-    return track_objects, segment_objects
+
+        available_routes = data.get("available_routes", [])
+
+    return track_objects, segment_objects, available_routes
