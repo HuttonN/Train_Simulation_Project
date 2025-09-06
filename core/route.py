@@ -19,3 +19,6 @@ class Route:
             step["track_id"] == station_id and step.get("stop?", False)
             for step in self.steps
         )
+    
+    def reset(self):
+        self.current_index = 0
