@@ -1,0 +1,8 @@
+{
+  "track_id": "Test_JunctionTrack",
+  "route": [
+    { "track": "entry_A", "entry": "A", "exit": "B" },
+    { "track": "junction", "entry": "A", "exit": "C" },
+    { "track": "entry_C", "entry": "B", "exit": "A" }
+  ]
+}
