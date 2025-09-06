@@ -87,7 +87,7 @@ class Train(pygame.sprite.Sprite):
                 return  # Wait for junction
             else:
                 self.waiting_for_junction = False
-                self.speed = 3  # or your default
+                self.speed = 3
 
         self.move_along_track_piece()
 
@@ -255,7 +255,7 @@ class Train(pygame.sprite.Sprite):
             carriage.draw(surface)
 
     def get_carriage_position(self, carriage_index):
-        CARRIAGE_LENGTH = 53  # px per carriage (update if needed)
+        CARRIAGE_LENGTH = 53  # px per carriage
         target_distance = (carriage_index + 1) * CARRIAGE_LENGTH
 
         # Try to get position from position history

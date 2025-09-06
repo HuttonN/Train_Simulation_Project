@@ -189,7 +189,7 @@ class StationTrack(StraightTrack):
         platform_surface = pygame.Surface((self.PLATFORM_LENGTH, self.PLATFORM_WIDTH), pygame.SRCALPHA)
         pygame.draw.rect(platform_surface, self.PLATFORM_COLOUR, (0, 0, self.PLATFORM_LENGTH, self.PLATFORM_WIDTH))
 
-        # Draw label in center
+        # Draw label in centre
         label = f"{self.name} ({self.get_passenger_count()})"
         font = pygame.font.SysFont(None, 16)
         text = font.render(label, True, self.TEXT_COLOUR)

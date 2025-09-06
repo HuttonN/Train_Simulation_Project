@@ -244,13 +244,13 @@ class CurvedTrack(BaseTrack):
 
     #region --- Rendering Methods ---------------------------------------------------
 
-    def draw_track(self, surface, color=(200,180,60), n_points=50):
+    def draw_track(self, surface, colour=(200,180,60), n_points=50):
         """Draw the Bezier curve on the given surface"""
         points = [
             quadratic_bezier(t/(n_points-1), (self.xA, self.yA), (self.xCtrl, self.yCtrl), (self.xC, self.yC)) 
             for t in range(n_points)
         ]
-        pygame.draw.lines(surface, color, False, points, 5)
+        pygame.draw.lines(surface, colour, False, points, 5)
 
     #endregion
 
