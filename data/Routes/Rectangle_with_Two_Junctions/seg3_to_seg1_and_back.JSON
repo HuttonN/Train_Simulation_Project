@@ -1,0 +1,17 @@
+{
+  "id": "seg3_to_seg1_and_back",
+  "name": "Segment3→1→3 (start on shortcut)",
+  "steps": [
+    { "track_id": "shortcut",         "entry": "start",     "exit": "end" },
+    { "track_id": "bottom_junction",  "entry": "curve_end", "exit": "start" },
+
+    { "track_id": "bottom_straight1", "entry": "start",     "exit": "end" },
+    { "track_id": "bl_curve",         "entry": "start",     "exit": "end" },
+    { "track_id": "left_straight",    "entry": "start",     "exit": "end" },
+    { "track_id": "tl_curve",         "entry": "start",     "exit": "end" },
+    { "track_id": "top_straight_1",   "entry": "start",     "exit": "end" },
+
+    { "track_id": "top_junction",     "entry": "start",     "exit": "curve_end" },
+    { "track_id": "shortcut",         "entry": "start",     "exit": "end" }
+  ]
+}

@@ -3,7 +3,7 @@
   "route": [
     { "track": "tl_curve", "entry": "A", "exit": "C" },
     { "track": "top_straight_1", "entry": "A", "exit": "B"},
-    { "track": "top_station", "entry": "A", "exit": "B", "stop?": false},
+    { "track": "top_station", "entry": "A", "exit": "B", "stop?": true},
     { "track": "top_straight_2", "entry": "A", "exit": "B" },
     { "track": "tr_curve", "entry": "A", "exit": "C" },
     { "track": "top_right_straight", "entry": "A", "exit": "B" },
@@ -11,7 +11,7 @@
     { "track": "middle_straight_2", "entry": "B", "exit": "A" },
     { "track": "middle_junction", "entry": "S", "exit": "A" },
     { "track": "middle_straight_3", "entry": "B", "exit": "A" },
-    { "track": "middle_station", "entry": "B", "exit": "A", "stop?": false},
+    { "track": "middle_station", "entry": "B", "exit": "A", "stop?": true},
     { "track": "middle_straight_1", "entry": "B", "exit": "A" },
     { "track": "left_double_curve_junction", "entry": "A", "exit": "R" },
     { "track": "top_left_straight", "entry": "A", "exit": "B" },

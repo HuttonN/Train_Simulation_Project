@@ -1,0 +1,84 @@
+{
+  "complete": true,
+  "display_name": "Test DoubleCurveJunctionTrack",
+  "description": "Minimal layout to test all 3 entry points (A, S, C) of a junction.",
+  "preview_image": "assets/images/placeholder.png",
+  "tracks": [
+    {
+      "id": "entry_A",
+      "type": "straight",
+      "start": [5, 10],
+      "end": [5, 15],
+      "connections": {
+        "end": { "track": "junction", "endpoint": "start" }
+      },
+      "segment": "segment_A"
+    },
+    {
+      "id": "entry_S",
+      "type": "straight",
+      "start": [5, 24],
+      "end": [5, 19],
+      "connections": {
+        "end": { "track": "junction", "endpoint": "straight_end" }
+      },
+      "segment": "segment_S"
+    },
+    {
+      "id": "entry_C",
+      "type": "straight",
+      "start": [12, 18],
+      "end": [7, 18],
+      "connections": {
+        "end": { "track": "junction", "endpoint": "curve_end" }
+      },
+      "segment": "segment_C"
+    },
+    {
+        "id": "right_double_curve_junction",
+        "type": "double_curve_junction",
+        "start": [12, 29],
+        "right_curve_control": [12, 32],
+        "left_curve_control": [12, 32],
+        "right_curve_end": [15, 32],
+        "left_curve_end": [9, 32],
+        "connections": {
+            "start":        { "track": "middle_straight_2", "endpoint": "end" },
+            "left_curve_end": { "track": "top_right_straight", "endpoint": "end" },
+            "right_curve_end":    { "track": "bottom_right_straight", "endpoint": "start" }
+        }
+    },
+  ],
+  "available_routes": [
+    {
+      "id": "A_to_S",
+      "name": "A to S",
+      "file_path": "data/Routes/Test_JunctionTrack/A_to_S.json"
+    },
+    {
+      "id": "S_to_A",
+      "name": "S to A",
+      "file_path": "data/Routes/Test_JunctionTrack/S_to_A.json"
+    },
+    {
+      "id": "A_to_C",
+      "name": "A to C",
+      "file_path": "data/Routes/Test_JunctionTrack/A_to_C.json"
+    },
+    {
+      "id": "C_to_A",
+      "name": "C to A",
+      "file_path": "data/Routes/Test_JunctionTrack/C_to_A.json"
+    },
+    {
+      "id": "S_to_C",
+      "name": "S to C",
+      "file_path": "data/Routes/Test_JunctionTrack/S_to_C.json"
+    },
+    {
+      "id": "C_to_S",
+      "name": "C to S",
+      "file_path": "data/Routes/Test_JunctionTrack/C_to_S.json"
+    }
+  ]
+}

@@ -1,156 +1,179 @@
 {
-    "complete": false,
-    "display_name": "Track 1",
-    "description": "A sample layout with three junctions, and three stations.",
-    "preview_image": "assets/images/Two_Rectangles_with_Two_Junctions_and_Three_Stations.png",
-    "tracks": [
-        {
-            "id": "top_straight_1",
-            "type": "straight",
-            "start": [5, 5],
-            "end": [5, 15],
-            "connections": {
-                "start": { "track": "tl_curve", "endpoint": "end" },
-                "end":   { "track": "top_junction", "endpoint": "start" }
-            }
-        },
-        {
-            "id": "top_junction",
-            "type": "junction",
-            "start": [5, 15],
-            "straight_end": [5, 19],
-            "curve_control": [5, 18],
-            "curve_end": [7, 18],
-            "connections": {
-                "start":         { "track": "top_straight_1", "endpoint": "end" },
-                "straight_end":  { "track": "top_straight2",  "endpoint": "start" },
-                "curve_end":     { "track": "shortcut",       "endpoint": "start" }
-            }
-        },
-        {
-            "id": "top_straight2",
-            "type": "straight",
-            "start": [5, 19],
-            "end": [5, 25],
-            "connections": {
-                "start": { "track": "top_junction", "endpoint": "straight_end" },
-                "end":   { "track": "tr_curve",     "endpoint": "start" }
-            }
-        },
-        {
-            "id": "tr_curve",
-            "type": "curve",
-            "start": [5, 25],
-            "control": [5, 28],
-            "end": [8, 28],
-            "connections": {
-                "start": { "track": "top_straight2", "endpoint": "end" },
-                "end":   { "track": "right_straight", "endpoint": "start" }
-            }
-        },
-        {
-            "id": "right_straight",
-            "type": "straight",
-            "start": [8, 28],
-            "end": [12, 28],
-            "connections": {
-                "start": { "track": "tr_curve",   "endpoint": "end" },
-                "end":   { "track": "br_curve",   "endpoint": "start" }
-            }
-        },
-        {
-            "id": "br_curve",
-            "type": "curve",
-            "start": [12, 28],
-            "control": [15, 28],
-            "end": [15, 25],
-            "connections": {
-                "start": { "track": "right_straight", "endpoint": "end" },
-                "end":   { "track": "bottom_straight2", "endpoint": "start" }
-            }
-        },
-        {
-            "id": "bottom_straight2",
-            "type": "straight",
-            "start": [15, 25],
-            "end": [15, 19],
-            "connections": {
-                "start": { "track": "br_curve", "endpoint": "end" },
-                "end":   { "track": "bottom_junction", "endpoint": "straight_end" }
-            }
-        },
-        {
-            "id": "bottom_junction",
-            "type": "junction",
-            "start": [15, 15],
-            "straight_end": [15, 19],
-            "curve_control": [15, 18],
-            "curve_end": [13, 18],
-            "connections": {
-                "start":        { "track": "bottom_straight1", "endpoint": "start" },
-                "straight_end": { "track": "bottom_straight2", "endpoint": "end" },
-                "curve_end":    { "track": "shortcut",         "endpoint": "end" }
-            }
-        },
-        {
-            "id": "bottom_straight1",
-            "type": "straight",
-            "start": [15, 15],
-            "end": [15, 5],
-            "connections": {
-                "start": { "track": "bottom_junction", "endpoint": "start" },
-                "end":   { "track": "bl_curve",        "endpoint": "start" }
-            }
-        },
-        {
-            "id": "bl_curve",
-            "type": "curve",
-            "start": [15, 5],
-            "control": [15, 2],
-            "end": [12, 2],
-            "connections": {
-                "start": { "track": "bottom_straight1", "endpoint": "end" },
-                "end":   { "track": "left_straight",    "endpoint": "start" }
-            }
-        },
-        {
-            "id": "left_straight",
-            "type": "straight",
-            "start": [12, 2],
-            "end": [8, 2],
-            "connections": {
-                "start": { "track": "bl_curve", "endpoint": "end" },
-                "end":   { "track": "tl_curve", "endpoint": "start" }
-            }
-        },
-        {
-            "id": "tl_curve",
-            "type": "curve",
-            "start": [8, 2],
-            "control": [5, 2],
-            "end": [5, 5],
-            "connections": {
-                "start": { "track": "left_straight",   "endpoint": "end" },
-                "end":   { "track": "top_straight_1",  "endpoint": "start" }
-            }
-        },
-        {
-            "id": "shortcut",
-            "type": "straight",
-            "start": [7, 18],
-            "end": [13, 18],
-            "connections": {
-                "start": { "track": "top_junction",    "endpoint": "curve_end" },
-                "end":   { "track": "bottom_junction", "endpoint": "curve_end" }
-            }
-        }
-    ],
-    "available_routes": [
-        {
-            "id": "outer_loop_and_shortcut",
-            "name": "Outer Loop and Shortcut",
-            "description": "Complete circuit with express shortcut option",
-            "file_path": "data/Routes/Rectangle_with_Two_Junctions/outer_loop_and_shortcut.JSON"
-        }
-    ]
+  "complete": false,
+  "display_name": "Track 1",
+  "description": "A sample layout with three junctions, and three stations.",
+  "preview_image": "assets/images/Two_Rectangles_with_Two_Junctions_and_Three_Stations.png",
+  "tracks": [
+    {
+      "id": "top_straight_1",
+      "type": "straight",
+      "start": [5, 5],
+      "end": [5, 15],
+      "connections": {
+        "start": { "track": "tl_curve", "endpoint": "end" },
+        "end":   { "track": "top_junction", "endpoint": "start" }
+      },
+      "segment": "segment1"
+    },
+    {
+      "id": "top_junction",
+      "type": "junction",
+      "start": [5, 15],
+      "straight_end": [5, 19],
+      "curve_control": [5, 18],
+      "curve_end": [7, 18],
+      "connections": {
+        "start":         { "track": "top_straight_1", "endpoint": "end" },
+        "straight_end":  { "track": "top_straight2",  "endpoint": "start" },
+        "curve_end":     { "track": "shortcut",       "endpoint": "start" }
+      }
+    },
+    {
+      "id": "top_straight2",
+      "type": "straight",
+      "start": [5, 19],
+      "end": [5, 25],
+      "connections": {
+        "start": { "track": "top_junction", "endpoint": "straight_end" },
+        "end":   { "track": "tr_curve",     "endpoint": "start" }
+      },
+      "segment": "segment2"
+    },
+    {
+      "id": "tr_curve",
+      "type": "curve",
+      "start": [5, 25],
+      "control": [5, 28],
+      "end": [8, 28],
+      "connections": {
+        "start": { "track": "top_straight2", "endpoint": "end" },
+        "end":   { "track": "right_straight", "endpoint": "start" }
+      },
+      "segment": "segment2"
+    },
+    {
+      "id": "right_straight",
+      "type": "straight",
+      "start": [8, 28],
+      "end": [12, 28],
+      "connections": {
+        "start": { "track": "tr_curve",   "endpoint": "end" },
+        "end":   { "track": "br_curve",   "endpoint": "start" }
+      },
+      "segment": "segment2"
+    },
+    {
+      "id": "br_curve",
+      "type": "curve",
+      "start": [12, 28],
+      "control": [15, 28],
+      "end": [15, 25],
+      "connections": {
+        "start": { "track": "right_straight", "endpoint": "end" },
+        "end":   { "track": "bottom_straight2", "endpoint": "start" }
+      },
+      "segment": "segment2"
+    },
+    {
+      "id": "bottom_straight2",
+      "type": "straight",
+      "start": [15, 25],
+      "end": [15, 19],
+      "connections": {
+        "start": { "track": "br_curve", "endpoint": "end" },
+        "end":   { "track": "bottom_junction", "endpoint": "straight_end" }
+      },
+      "segment": "segment2"
+    },
+    {
+      "id": "bottom_junction",
+      "type": "junction",
+      "start": [15, 15],
+      "straight_end": [15, 19],
+      "curve_control": [15, 18],
+      "curve_end": [13, 18],
+      "connections": {
+        "start":        { "track": "bottom_straight1", "endpoint": "start" },
+        "straight_end": { "track": "bottom_straight2", "endpoint": "end" },
+        "curve_end":    { "track": "shortcut",         "endpoint": "end" }
+      }
+    },
+    {
+      "id": "bottom_straight1",
+      "type": "straight",
+      "start": [15, 15],
+      "end": [15, 5],
+      "connections": {
+        "start": { "track": "bottom_junction", "endpoint": "start" },
+        "end":   { "track": "bl_curve",        "endpoint": "start" }
+      },
+      "segment": "segment1"
+    },
+    {
+      "id": "bl_curve",
+      "type": "curve",
+      "start": [15, 5],
+      "control": [15, 2],
+      "end": [12, 2],
+      "connections": {
+        "start": { "track": "bottom_straight1", "endpoint": "end" },
+        "end":   { "track": "left_straight",    "endpoint": "start" }
+      },
+      "segment": "segment1"
+    },
+    {
+      "id": "left_straight",
+      "type": "straight",
+      "start": [12, 2],
+      "end": [8, 2],
+      "connections": {
+        "start": { "track": "bl_curve", "endpoint": "end" },
+        "end":   { "track": "tl_curve", "endpoint": "start" }
+      },
+      "segment": "segment1"
+    },
+    {
+      "id": "tl_curve",
+      "type": "curve",
+      "start": [8, 2],
+      "control": [5, 2],
+      "end": [5, 5],
+      "connections": {
+        "start": { "track": "left_straight",   "endpoint": "end" },
+        "end":   { "track": "top_straight_1",  "endpoint": "start" }
+      },
+      "segment": "segment1"
+    },
+    {
+      "id": "shortcut",
+      "type": "straight",
+      "start": [7, 18],
+      "end": [13, 18],
+      "connections": {
+        "start": { "track": "top_junction",    "endpoint": "curve_end" },
+        "end":   { "track": "bottom_junction", "endpoint": "curve_end" }
+      },
+      "segment": "segment3"
+    }
+  ],
+  "available_routes": [
+    {
+        "id": "outer_loop_and_shortcut",
+        "name": "Outer Loop and Shortcut",
+        "description": "Complete circuit with express shortcut option",
+        "file_path": "data/Routes/Rectangle_with_Two_Junctions/outer_loop_and_shortcut.JSON"
+    },
+    {
+        "id": "seg3_to_seg1_and_back",
+        "name": "Segment3→1→3 (start on shortcut)",
+        "description": "Start on the shortcut (segment3), loop via segment1, return to segment3.",
+        "file_path": "data/Routes/Rectangle_with_Two_Junctions/seg3_to_seg1_and_back.JSON"
+    },
+    {
+        "id": "seg1_to_seg3_and_back",
+        "name": "Segment1→3→3 (start on segment1)",
+        "description": "Start on segment1, traverse to the shortcut, return to segment3.",
+        "file_path": "data/Routes/Rectangle_with_Two_Junctions/seg1_to_seg3_and_back.JSON"
+    }
+  ]
 }
