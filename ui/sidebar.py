@@ -8,7 +8,7 @@ class Sidebar:
         button_size = get_button_size(screen_width, screen_height)
 
         self.button_titles = [
-            "Create Simulation", "Train Status", "Player Train"
+            "Create Simulation"
         ]
 
         self.buttons = []
