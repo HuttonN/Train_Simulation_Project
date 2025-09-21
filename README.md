@@ -157,4 +157,9 @@ pytest tests/unit
 
 ## License
 
-_No licence file is included yet; add one before distributing binaries or sharing widely._
+Copyright (c) 2025 Neil Hutton. All rights reserved.
+
+Permission is granted to prospective employers, recruiters, and interviewers to
+view, clone, and run this code for evaluation purposes only. No permission is
+granted to modify, redistribute, sublicense, or use this code in production or
+derivative works without prior written consent from the copyright holder.
